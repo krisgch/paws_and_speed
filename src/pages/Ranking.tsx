@@ -139,13 +139,19 @@ export default function Ranking() {
             </span>
           </div>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {['Rank', 'Size', 'Dog', 'Breed', 'Handler', 'C.Faults', 'Refusals', 'T.Faults', 'Total F', 'Time'].map((h) => (
+              {(['Rank', 'Size', 'Dog', 'Breed', 'Handler', 'C.Faults', 'Refusals', 'T.Faults', 'Total F', 'Time'] as const).map((h) => {
+                const hiddenClass =
+                  h === 'Breed' || h === 'Size' ? ' hidden sm:table-cell'
+                  : h === 'C.Faults' || h === 'Refusals' || h === 'T.Faults' ? ' hidden md:table-cell'
+                  : '';
+                return (
                 <th
                   key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-[1px] whitespace-nowrap"
+                  className={`text-left text-[10px] font-bold uppercase tracking-[1px] whitespace-nowrap${hiddenClass}`}
                   style={{
                     padding: '10px 14px',
                     color: '#555b73',
@@ -155,7 +161,8 @@ export default function Ranking() {
                 >
                   {h}
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -177,11 +184,14 @@ export default function Ranking() {
                 return (
                   <tr key={c.id} style={{ opacity: 0.4, textDecoration: 'line-through' }}>
                     <td style={tdStyle}>{rankEl}</td>
-                    <td style={tdStyle}><SizeTag size={c.size} /></td>
+                    <td className="hidden sm:table-cell" style={tdStyle}><SizeTag size={c.size} /></td>
                     <td style={tdStyle}>{c.icon || dogEmoji(c.dog)} {c.dog}</td>
-                    <td style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
+                    <td className="hidden sm:table-cell" style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
                     <td style={tdStyle}>{c.human}</td>
-                    <td colSpan={5} style={tdStyle}>
+                    <td className="hidden md:table-cell" style={tdStyle} />
+                    <td className="hidden md:table-cell" style={tdStyle} />
+                    <td className="hidden md:table-cell" style={tdStyle} />
+                    <td colSpan={2} style={tdStyle}>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
                         ELIMINATED
                       </span>
@@ -194,11 +204,14 @@ export default function Ranking() {
                 return (
                   <tr key={c.id} style={{ opacity: 0.4 }}>
                     <td style={tdStyle}>{rankEl}</td>
-                    <td style={tdStyle}><SizeTag size={c.size} /></td>
+                    <td className="hidden sm:table-cell" style={tdStyle}><SizeTag size={c.size} /></td>
                     <td style={tdStyle}>{c.icon || dogEmoji(c.dog)} {c.dog}</td>
-                    <td style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
+                    <td className="hidden sm:table-cell" style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
                     <td style={tdStyle}>{c.human}</td>
-                    <td colSpan={5} style={{ ...tdStyle, color: '#555b73', fontStyle: 'italic' }}>Pending…</td>
+                    <td className="hidden md:table-cell" style={tdStyle} />
+                    <td className="hidden md:table-cell" style={tdStyle} />
+                    <td className="hidden md:table-cell" style={tdStyle} />
+                    <td colSpan={2} style={{ ...tdStyle, color: '#555b73', fontStyle: 'italic' }}>Pending…</td>
                   </tr>
                 );
               }
@@ -206,7 +219,7 @@ export default function Ranking() {
               return (
                 <tr key={c.id}>
                   <td style={tdStyle}>{rankEl}</td>
-                  <td style={tdStyle}><SizeTag size={c.size} /></td>
+                  <td className="hidden sm:table-cell" style={tdStyle}><SizeTag size={c.size} /></td>
                   <td style={{ ...tdStyle, color: '#f0f2f8' }}>
                     <span className="font-bold">
                       {c.icon || dogEmoji(c.dog)} {c.dog}
@@ -217,11 +230,11 @@ export default function Ranking() {
                       )}
                     </span>
                   </td>
-                  <td style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
+                  <td className="hidden sm:table-cell" style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
                   <td style={{ ...tdStyle, color: '#8b90a5' }}>{c.human}</td>
-                  <td style={{ ...tdStyle, color: c.fault === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.fault}</td>
-                  <td style={{ ...tdStyle, color: c.refusal === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.refusal}</td>
-                  <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', monospace", color: (c.timeFault ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.timeFault ?? 0}</td>
+                  <td className="hidden md:table-cell" style={{ ...tdStyle, color: c.fault === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.fault}</td>
+                  <td className="hidden md:table-cell" style={{ ...tdStyle, color: c.refusal === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.refusal}</td>
+                  <td className="hidden md:table-cell" style={{ ...tdStyle, fontFamily: "'JetBrains Mono', monospace", color: (c.timeFault ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.timeFault ?? 0}</td>
                   <td style={{ ...tdStyle, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: isClear ? '#2dd4a0' : '#ff6b2c' }}>{c.totalFault}</td>
                   <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', monospace" }}>
                     {c.time?.toFixed(2)}s
@@ -236,6 +249,7 @@ export default function Ranking() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Ranking logic note */}

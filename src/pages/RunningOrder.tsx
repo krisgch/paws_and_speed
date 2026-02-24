@@ -122,6 +122,7 @@ export default function RunningOrder() {
           )}
         </div>
 
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -129,7 +130,7 @@ export default function RunningOrder() {
               {['#', 'Size', 'Dog', 'Breed', 'Handler', 'Status'].map((h) => (
                 <th
                   key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-[1px] whitespace-nowrap"
+                  className={`text-left text-[10px] font-bold uppercase tracking-[1px] whitespace-nowrap${h === 'Breed' ? ' hidden sm:table-cell' : ''}`}
                   style={{ padding: '10px 14px', color: '#555b73', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid #2a2f40' }}
                 >
                   {h}
@@ -259,7 +260,7 @@ export default function RunningOrder() {
                           <td className="text-[13px] font-bold" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#f0f2f8' }}>
                             {c.icon || dogEmoji(c.dog)} {c.dog}
                           </td>
-                          <td className="text-[12px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
+                          <td className="text-[12px] hidden sm:table-cell" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
                             {c.breed || '—'}
                           </td>
                           <td className="text-[13px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
@@ -277,6 +278,7 @@ export default function RunningOrder() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

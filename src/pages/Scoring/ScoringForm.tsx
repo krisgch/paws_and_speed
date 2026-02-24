@@ -193,7 +193,7 @@ export default function ScoringForm() {
         )}
 
         {/* Buttons */}
-        <div className="flex gap-2.5 justify-end">
+        <div className="flex gap-2.5 justify-end flex-wrap">
           <button
             onClick={handleEliminate}
             disabled={!competitor}

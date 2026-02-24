@@ -45,7 +45,7 @@ export default function Header() {
           background: 'rgba(12,14,18,0.88)',
           backdropFilter: 'blur(20px)',
           borderBottom: '1px solid #2a2f40',
-          padding: '0 24px',
+          padding: '0 12px',
         }}
       >
         <div className="max-w-[1440px] mx-auto flex items-center justify-between h-16 gap-4 max-[900px]:flex-wrap max-[900px]:h-auto max-[900px]:py-3 max-[900px]:gap-2">
@@ -121,7 +121,8 @@ export default function Header() {
                 color: hostUnlocked ? '#2dd4a0' : '#555b73',
               }}
             >
-              {hostUnlocked ? '🔓 Host Mode' : '🔒 Locked'}
+              <span className="hidden sm:inline">{hostUnlocked ? '🔓 Host Mode' : '🔒 Locked'}</span>
+          <span className="sm:hidden">{hostUnlocked ? '🔓' : '🔒'}</span>
             </button>
           </div>
         </div>
