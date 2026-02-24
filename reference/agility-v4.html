@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paws & Speed — Dog Agility Competition</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-dark: #0c0e12;
+  --bg-card: #14171e;
+  --bg-card-hover: #1a1e28;
+  --bg-surface: #1c2030;
+  --border: #2a2f40;
+  --text-primary: #f0f2f8;
+  --text-secondary: #8b90a5;
+  --text-muted: #555b73;
+  --accent-orange: #ff6b2c;
+  --accent-orange-glow: rgba(255,107,44,0.15);
+  --accent-green: #2dd4a0;
+  --accent-green-glow: rgba(45,212,160,0.15);
+  --accent-blue: #5b9cf6;
+  --accent-yellow: #fbbf24;
+  --accent-red: #ef4444;
+  --size-s: #f472b6;
+  --size-m: #60a5fa;
+  --size-i: #34d399;
+  --size-l: #fbbf24;
+  --gold: #fbbf24;
+  --silver: #94a3b8;
+  --bronze: #d97706;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(12,14,18,0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.header-inner {
+  max-width: 1440px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; gap: 16px;
+}
+.logo { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.logo-icon {
+  width:36px; height:36px; background:var(--accent-orange); border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:18px; transform:rotate(-6deg);
+}
+.logo-text { font-family:'Archivo Black',sans-serif; font-size:18px; letter-spacing:-0.5px; }
+.logo-text span { color:var(--accent-orange); }
+
+.nav-tabs { display:flex; gap:4px; background:var(--bg-surface); border-radius:10px; padding:4px; }
+.nav-tab {
+  padding:8px 18px; border-radius:8px; border:none; background:transparent;
+  color:var(--text-secondary); font-family:'DM Sans',sans-serif; font-size:13px;
+  font-weight:600; cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; gap:7px; white-space:nowrap;
+}
+.nav-tab:hover { color:var(--text-primary); background:rgba(255,255,255,0.04); }
+.nav-tab.active { background:var(--accent-orange); color:#fff; }
+.nav-tab .host-badge {
+  font-size:9px; background:rgba(255,255,255,0.2);
+  padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;
+}
+
+.header-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+
+/* Round dropdown */
+.round-dropdown-wrap { position:relative; }
+.round-dropdown-btn {
+  padding:8px 16px; border-radius:8px; border:1px solid var(--border);
+  background:var(--bg-surface); color:var(--text-primary);
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  cursor:pointer; display:flex; align-items:center; gap:8px; min-width:180px;
+  justify-content:space-between; transition:border-color 0.2s;
+}
+.round-dropdown-btn:hover { border-color:var(--accent-blue); }
+.round-dropdown-btn .dd-arrow { font-size:10px; color:var(--text-muted); transition:transform 0.2s; }
+.round-dropdown-btn.open .dd-arrow { transform:rotate(180deg); }
+.round-dropdown-menu {
+  position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:200;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm);
+  box-shadow:0 12px 40px rgba(0,0,0,0.5); display:none; overflow:hidden;
+}
+.round-dropdown-menu.open { display:block; }
+.round-option {
+  padding:10px 16px; cursor:pointer; font-size:13px; font-weight:500;
+  transition:background 0.15s; border-bottom:1px solid rgba(42,47,64,0.4);
+}
+.round-option:last-child { border-bottom:none; }
+.round-option:hover { background:var(--bg-card-hover); }
+.round-option.active { background:var(--accent-orange-glow); color:var(--accent-orange); font-weight:700; }
+
+/* Host mode indicator */
+.host-indicator {
+  padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700;
+  letter-spacing:0.5px; cursor:pointer; border:none; transition:all 0.2s;
+}
+.host-indicator.locked { background:rgba(85,91,115,0.2); color:var(--text-muted); }
+.host-indicator.unlocked { background:var(--accent-green-glow); color:var(--accent-green); }
+
+/* ===== MAIN ===== */
+.main { max-width:1440px; margin:0 auto; padding:24px; }
+.page { display:none; animation:fadeIn 0.3s ease; }
+.page.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ===== SHARED ===== */
+.size-filters { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+.size-filters label { font-size:12px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-right:6px; }
+.size-pill {
+  padding:5px 16px; border-radius:20px; border:2px solid var(--border);
+  background:transparent; color:var(--text-secondary); font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s;
+}
+.size-pill.active-S { border-color:var(--size-s); background:rgba(244,114,182,0.1); color:var(--size-s); }
+.size-pill.active-M { border-color:var(--size-m); background:rgba(96,165,250,0.1); color:var(--size-m); }
+.size-pill.active-I { border-color:var(--size-i); background:rgba(52,211,153,0.1); color:var(--size-i); }
+.size-pill.active-L { border-color:var(--size-l); background:rgba(251,191,36,0.1); color:var(--size-l); }
+
+.table-wrapper { background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.table-header-bar { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.table-title { font-family:'Archivo Black',sans-serif; font-size:15px; display:flex; align-items:center; gap:10px; }
+.count-badge { font-family:'JetBrains Mono',monospace; font-size:11px; background:var(--bg-surface); padding:3px 10px; border-radius:6px; color:var(--text-muted); }
+
+table { width:100%; border-collapse:collapse; }
+th { padding:10px 14px; text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); background:rgba(0,0,0,0.2); border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:12px 14px; font-size:13px; border-bottom:1px solid rgba(42,47,64,0.5); }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+
+.size-tag { display:inline-flex; align-items:center; justify-content:center; width:30px; height:22px; border-radius:6px; font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.size-tag-S { background:rgba(244,114,182,0.15); color:var(--size-s); }
+.size-tag-M { background:rgba(96,165,250,0.15); color:var(--size-m); }
+.size-tag-I { background:rgba(52,211,153,0.15); color:var(--size-i); }
+.size-tag-L { background:rgba(251,191,36,0.15); color:var(--size-l); }
+
+.order-num { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; color:var(--accent-orange); }
+.dog-name { font-weight:700; display:flex; align-items:center; gap:6px; }
+.human-name { color:var(--text-secondary); }
+
+.status-indicator { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.status-waiting { background:rgba(85,91,115,0.2); color:var(--text-muted); }
+.status-running { background:var(--accent-orange-glow); color:var(--accent-orange); }
+.status-done { background:var(--accent-green-glow); color:var(--accent-green); }
+.status-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+.status-running .status-dot { animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* NOW RUNNING */
+.now-running {
+  background:linear-gradient(135deg,rgba(255,107,44,0.08),rgba(255,107,44,0.02));
+  border:1px solid rgba(255,107,44,0.2); border-radius:var(--radius);
+  padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; gap:16px;
+}
+.now-running-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--accent-orange); display:flex; align-items:center; gap:7px; }
+.now-running-label .live-dot { width:7px; height:7px; border-radius:50%; background:var(--accent-orange); animation:pulse 1.5s infinite; }
+.now-running-dog { font-family:'Archivo Black',sans-serif; font-size:20px; }
+.now-running-human { color:var(--text-secondary); font-size:14px; }
+.now-running-meta { display:flex; gap:10px; margin-left:auto; }
+.meta-chip { padding:5px 12px; border-radius:8px; background:var(--bg-surface); font-size:12px; font-weight:600; display:flex; align-items:center; gap:5px; }
+
+/* Course info bar */
+.course-info-bar { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.course-info-chip { display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:8px; background:var(--bg-card); border:1px solid var(--border); font-size:12px; font-weight:600; }
+.ci-label { color:var(--text-muted); font-size:10px; text-transform:uppercase; letter-spacing:0.5px; }
+.ci-value { font-family:'JetBrains Mono',monospace; font-weight:700; }
+.ci-sct { color:var(--accent-blue); }
+.ci-mct { color:var(--accent-red); }
+
+/* ===== COURSE TIME PANEL ===== */
+.course-time-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:20px; overflow:hidden; }
+.ctp-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+.ctp-header:hover { background:var(--bg-card-hover); }
+.ctp-title { font-family:'Archivo Black',sans-serif; font-size:13px; display:flex; align-items:center; gap:10px; }
+.ctp-toggle { font-size:12px; color:var(--text-muted); }
+.ctp-body { padding:16px; display:none; }
+.ctp-body.open { display:block; }
+.ctp-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.ctp-size-col { background:var(--bg-surface); border-radius:var(--radius-sm); padding:14px; border:1px solid var(--border); }
+.ctp-size-label { font-weight:700; font-size:12px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.ctp-field { margin-bottom:8px; }
+.ctp-field:last-child { margin-bottom:0; }
+.ctp-field label { display:block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:3px; }
+.ctp-field input { width:100%; padding:7px 8px; border-radius:6px; border:2px solid var(--border); background:var(--bg-dark); color:var(--text-primary); font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; text-align:center; outline:none; transition:border-color 0.2s; }
+.ctp-field input:focus { border-color:var(--accent-blue); }
+.ctp-note { margin-top:12px; font-size:11px; color:var(--text-muted); text-align:right; }
+
+/* ===== DOG MANAGEMENT PANEL ===== */
+.mgmt-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:20px; overflow:hidden; }
+.mgmt-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+.mgmt-header:hover { background:var(--bg-card-hover); }
+.mgmt-body { padding:16px; display:none; }
+.mgmt-body.open { display:block; }
+
+.add-dog-form { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.add-dog-form .input-group { flex:1; min-width:120px; }
+.add-dog-form .input-group label { display:block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:4px; }
+.add-dog-form .input-group input,
+.add-dog-form .input-group select {
+  width:100%; padding:8px 10px; border-radius:6px; border:2px solid var(--border);
+  background:var(--bg-surface); color:var(--text-primary); font-family:'DM Sans',sans-serif;
+  font-size:13px; font-weight:600; outline:none; transition:border-color 0.2s;
+}
+.add-dog-form .input-group input:focus,
+.add-dog-form .input-group select:focus { border-color:var(--accent-orange); }
+.add-dog-form select option { background:var(--bg-card); }
+
+.mgmt-dog-list { max-height:300px; overflow-y:auto; }
+.mgmt-dog-item {
+  display:flex; align-items:center; gap:10px; padding:8px 12px;
+  border-bottom:1px solid rgba(42,47,64,0.4); font-size:13px;
+}
+.mgmt-dog-item:last-child { border-bottom:none; }
+.mgmt-dog-item .mgmt-order { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-muted); width:28px; text-align:center; }
+.mgmt-dog-item .mgmt-info { flex:1; }
+.mgmt-dog-item .mgmt-dog-name { font-weight:700; }
+.mgmt-dog-item .mgmt-human-name { font-size:11px; color:var(--text-secondary); }
+.mgmt-remove-btn {
+  padding:4px 10px; border-radius:6px; border:1px solid rgba(239,68,68,0.3);
+  background:rgba(239,68,68,0.1); color:var(--accent-red); font-size:11px;
+  font-weight:700; cursor:pointer; transition:all 0.15s;
+}
+.mgmt-remove-btn:hover { background:rgba(239,68,68,0.25); }
+
+/* ===== SCORING PAGE ===== */
+.scoring-layout { display:grid; grid-template-columns:320px 1fr; gap:20px; }
+.scoring-queue {
+  background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border);
+  height:fit-content; position:sticky; top:88px; max-height:calc(100vh - 110px); overflow-y:auto;
+}
+.queue-header { padding:14px 18px; border-bottom:1px solid var(--border); font-family:'Archivo Black',sans-serif; font-size:13px; }
+.queue-item { padding:10px 18px; border-bottom:1px solid rgba(42,47,64,0.4); display:flex; align-items:center; gap:10px; cursor:pointer; transition:all 0.15s; }
+.queue-item:hover { background:var(--bg-card-hover); }
+.queue-item.active-queue { background:var(--accent-orange-glow); border-left:3px solid var(--accent-orange); }
+.queue-item.scored { opacity:0.5; }
+.queue-order { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--text-muted); width:22px; }
+.queue-dog { font-weight:700; font-size:13px; }
+.queue-human { font-size:11px; color:var(--text-secondary); }
+
+.scoring-form-card { background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border); height:fit-content; }
+.scoring-form-header { padding:20px; border-bottom:1px solid var(--border); }
+.scoring-dog-name { font-family:'Archivo Black',sans-serif; font-size:24px; margin-bottom:4px; }
+.scoring-dog-meta { color:var(--text-secondary); font-size:13px; display:flex; gap:14px; align-items:center; }
+.form-body { padding:20px; }
+
+.input-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+.input-group label { display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:6px; }
+.input-group input {
+  width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:2px solid var(--border);
+  background:var(--bg-surface); color:var(--text-primary); font-family:'JetBrains Mono',monospace;
+  font-size:16px; font-weight:600; text-align:center; outline:none; transition:border-color 0.2s;
+}
+.input-group input:focus { border-color:var(--accent-orange); }
+.input-group input::placeholder { color:var(--text-muted); font-size:13px; }
+
+.fault-breakdown {
+  background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:14px; margin-bottom:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:10px;
+}
+.fb-item { text-align:center; }
+.fb-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:3px; }
+.fb-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; }
+.fb-plus { color:var(--text-muted); font-size:18px; display:flex; align-items:center; justify-content:center; }
+
+.over-mct-warning {
+  display:none; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
+  border-radius:8px; padding:10px 14px; margin-bottom:16px; color:var(--accent-red);
+  font-weight:700; font-size:13px; text-align:center;
+}
+
+.btn-row { display:flex; gap:10px; justify-content:flex-end; }
+.btn {
+  padding:10px 24px; border-radius:var(--radius-sm); border:none; font-family:'DM Sans',sans-serif;
+  font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;
+}
+.btn-primary { background:var(--accent-orange); color:#fff; }
+.btn-primary:hover { background:#e55a1f; transform:translateY(-1px); }
+.btn-secondary { background:var(--bg-surface); color:var(--text-secondary); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--text-muted); color:var(--text-primary); }
+.btn-eliminate { background:rgba(239,68,68,0.1); color:var(--accent-red); border:1px solid rgba(239,68,68,0.3); }
+.btn-eliminate:hover { background:rgba(239,68,68,0.2); }
+.btn-sm { padding:6px 14px; font-size:12px; }
+.btn-green { background:rgba(45,212,160,0.1); color:var(--accent-green); border:1px solid rgba(45,212,160,0.3); }
+.btn-green:hover { background:rgba(45,212,160,0.2); }
+
+/* ===== RANKING ===== */
+.podium { display:flex; justify-content:center; align-items:flex-end; gap:12px; margin-bottom:28px; padding:16px 0; }
+.podium-place { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.podium-avatar { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; border:3px solid; }
+.podium-1 .podium-avatar { border-color:var(--gold); background:rgba(251,191,36,0.1); }
+.podium-2 .podium-avatar { border-color:var(--silver); background:rgba(148,163,184,0.1); }
+.podium-3 .podium-avatar { border-color:var(--bronze); background:rgba(217,119,6,0.1); }
+.podium-name { font-weight:700; font-size:13px; text-align:center; }
+.podium-dog-name { font-size:11px; color:var(--text-secondary); text-align:center; }
+.podium-score { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-muted); }
+.podium-bar { width:110px; display:flex; align-items:center; justify-content:center; border-radius:8px 8px 0 0; font-family:'Archivo Black',sans-serif; font-size:22px; }
+.podium-1 .podium-bar { height:90px; background:linear-gradient(180deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05)); color:var(--gold); }
+.podium-2 .podium-bar { height:68px; background:linear-gradient(180deg,rgba(148,163,184,0.15),rgba(148,163,184,0.03)); color:var(--silver); }
+.podium-3 .podium-bar { height:50px; background:linear-gradient(180deg,rgba(217,119,6,0.15),rgba(217,119,6,0.03)); color:var(--bronze); }
+
+.rank-medal { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; font-size:13px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.rank-1 { background:rgba(251,191,36,0.15); color:var(--gold); }
+.rank-2 { background:rgba(148,163,184,0.15); color:var(--silver); }
+.rank-3 { background:rgba(217,119,6,0.15); color:var(--bronze); }
+.rank-other { color:var(--text-muted); }
+.fault-zero { color:var(--accent-green); }
+.eliminated-row td { opacity:0.4; text-decoration:line-through; }
+.elim-badge { background:rgba(239,68,68,0.15); color:var(--accent-red); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; }
+.clear-run-badge { background:rgba(45,212,160,0.15); color:var(--accent-green); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; }
+.time-fault-badge { background:rgba(251,191,36,0.15); color:var(--accent-yellow); padding:2px 6px; border-radius:6px; font-size:9px; font-weight:700; margin-left:4px; }
+
+.ranking-logic-note {
+  margin-top:14px; padding:12px 16px; background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--radius); font-size:12px; color:var(--text-muted);
+}
+.ranking-logic-note strong { color:var(--text-secondary); }
+
+/* ===== EXPORT BAR ===== */
+.export-bar {
+  display:flex; gap:10px; align-items:center; padding:14px 20px;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  margin-bottom:20px;
+}
+.export-bar-label { font-size:12px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-right:8px; }
+
+/* ===== PIN MODAL ===== */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:500;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.modal-overlay.show { opacity:1; pointer-events:all; }
+.modal-box {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:32px; width:360px; max-width:90vw; text-align:center;
+}
+.modal-box h3 { font-family:'Archivo Black',sans-serif; font-size:18px; margin-bottom:8px; }
+.modal-box p { color:var(--text-secondary); font-size:13px; margin-bottom:20px; }
+.modal-box input {
+  width:100%; padding:12px; border-radius:var(--radius-sm); border:2px solid var(--border);
+  background:var(--bg-surface); color:var(--text-primary); font-family:'JetBrains Mono',monospace;
+  font-size:24px; text-align:center; letter-spacing:8px; outline:none; margin-bottom:16px;
+}
+.modal-box input:focus { border-color:var(--accent-orange); }
+.modal-error { color:var(--accent-red); font-size:12px; font-weight:600; margin-bottom:12px; display:none; }
+
+/* TOAST */
+.toast {
+  position:fixed; bottom:24px; right:24px; background:var(--bg-card); border:1px solid var(--accent-green);
+  border-radius:var(--radius); padding:12px 18px; display:flex; align-items:center; gap:8px;
+  font-weight:600; font-size:13px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  transform:translateY(100px); opacity:0; transition:all 0.3s; z-index:999;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+
+/* Responsive */
+@media(max-width:900px) {
+  .scoring-layout { grid-template-columns:1fr; }
+  .input-grid { grid-template-columns:repeat(2,1fr); }
+  .ctp-grid { grid-template-columns:repeat(2,1fr); }
+  .header-inner { flex-wrap:wrap; height:auto; padding:12px 0; gap:8px; }
+  .nav-tabs { order:3; width:100%; justify-content:center; overflow-x:auto; }
+}
+@media(max-width:600px) {
+  .nav-tab { padding:7px 10px; font-size:11px; }
+  .now-running { flex-direction:column; align-items:flex-start; gap:10px; }
+  .now-running-meta { margin-left:0; }
+  .ctp-grid { grid-template-columns:1fr; }
+  .add-dog-form { flex-direction:column; }
+}
+
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; opacity:0.015;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size:256px;
+}
+</style>
+</head>
+<body>
+
+<!-- PIN MODAL -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal-box">
+    <h3>🔐 Host Access</h3>
+    <p>Enter the host PIN to access the Scoring page</p>
+    <input type="password" id="pin-input" maxlength="4" placeholder="····" onkeydown="if(event.key==='Enter')verifyPin()">
+    <div class="modal-error" id="pin-error">Incorrect PIN. Try again.</div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="verifyPin()">Unlock</button>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-muted)">Default PIN: <b>1234</b></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🐾</div>
+      <div class="logo-text">Paws<span>&</span>Speed</div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchPage('running')" id="tab-running">📋 Order</button>
+      <button class="nav-tab" onclick="switchPage('scoring')" id="tab-scoring">✏️ Scoring <span class="host-badge">Host</span></button>
+      <button class="nav-tab" onclick="switchPage('ranking')" id="tab-ranking">🏆 Rankings</button>
+    </nav>
+    <div class="header-right">
+      <div class="round-dropdown-wrap">
+        <button class="round-dropdown-btn" id="round-dd-btn" onclick="toggleRoundDropdown()">
+          <span id="round-dd-label">Novice 1</span>
+          <span class="dd-arrow">▼</span>
+        </button>
+        <div class="round-dropdown-menu" id="round-dd-menu"></div>
+      </div>
+      <button class="host-indicator locked" id="host-btn" onclick="toggleHost()">🔒 Locked</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ===== RUNNING ORDER ===== -->
+  <div class="page active" id="page-running">
+    <div id="running-course-info" class="course-info-bar"></div>
+    <div class="now-running" id="now-running-banner" style="display:none">
+      <div class="now-running-label"><div class="live-dot"></div> NOW RUNNING</div>
+      <div style="flex:1"><div class="now-running-dog" id="nr-dog">—</div><div class="now-running-human" id="nr-human">—</div></div>
+      <div class="now-running-meta"><div class="meta-chip" id="nr-size"></div><div class="meta-chip" id="nr-order"></div></div>
+    </div>
+    <div class="size-filters" id="running-size-filters"></div>
+    <div class="table-wrapper">
+      <div class="table-header-bar"><div class="table-title">🐕 Running Order <span class="count-badge" id="running-count">0</span></div></div>
+      <table><thead><tr><th style="width:50px">#</th><th style="width:50px">Size</th><th>Dog</th><th>Breed</th><th>Handler</th><th style="width:100px">Status</th></tr></thead><tbody id="running-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ===== SCORING ===== -->
+  <div class="page" id="page-scoring">
+    <!-- Course Time -->
+    <div class="course-time-panel">
+      <div class="ctp-header" onclick="togglePanel('ctp')"><div class="ctp-title">⏱️ Course Time Settings</div><div class="ctp-toggle" id="ctp-icon">▼</div></div>
+      <div class="ctp-body" id="ctp-body">
+        <div class="ctp-grid" id="ctp-grid"></div>
+        <div class="ctp-note">1 fault per full second over SCT &nbsp;|&nbsp; Over MCT = Eliminated</div>
+      </div>
+    </div>
+
+    <!-- Dog Management -->
+    <div class="mgmt-panel">
+      <div class="mgmt-header" onclick="togglePanel('mgmt')"><div class="ctp-title">🐕 Manage Competitors</div><div class="ctp-toggle" id="mgmt-icon">▼</div></div>
+      <div class="mgmt-body" id="mgmt-body">
+        <div class="add-dog-form">
+          <div class="input-group" style="flex:1.3"><label>Dog Name</label><input id="add-dog" placeholder="e.g. Pixel"></div>
+          <div class="input-group" style="flex:1.3"><label>Handler</label><input id="add-human" placeholder="e.g. Anna Schmidt"></div>
+          <div class="input-group" style="flex:1.3"><label>Breed</label><input id="add-breed" placeholder="e.g. Border Collie"></div>
+          <div class="input-group" style="flex:0.5;min-width:70px"><label>Size</label>
+            <select id="add-size"><option value="S">S</option><option value="M">M</option><option value="I">I</option><option value="L">L</option></select>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="addDog()" style="margin-bottom:0;align-self:flex-end;height:37px">➕ Add</button>
+        </div>
+        <div class="mgmt-dog-list" id="mgmt-list"></div>
+      </div>
+    </div>
+
+    <div class="size-filters" id="scoring-size-filters"></div>
+    <div id="scoring-course-info" class="course-info-bar"></div>
+
+    <div class="scoring-layout">
+      <div class="scoring-queue">
+        <div class="queue-header">Queue</div>
+        <div id="scoring-queue-list"></div>
+      </div>
+      <div class="scoring-form-card">
+        <div class="scoring-form-header">
+          <div class="scoring-dog-name" id="form-dog-name">Select a competitor</div>
+          <div class="scoring-dog-meta"><span id="form-human">—</span><span id="form-size-tag"></span><span id="form-order-tag"></span></div>
+        </div>
+        <div class="form-body">
+          <div class="input-grid">
+            <div class="input-group"><label>Faults (course)</label><input type="number" id="inp-fault" min="0" step="5" placeholder="0" oninput="recalc()"></div>
+            <div class="input-group"><label>Refusals</label><input type="number" id="inp-refusal" min="0" step="5" placeholder="0" oninput="recalc()"></div>
+            <div class="input-group"><label>Time (sec)</label><input type="number" id="inp-time" min="0" step="0.01" placeholder="0.00" oninput="recalc()"></div>
+          </div>
+          <div class="fault-breakdown">
+            <div class="fb-item"><div class="fb-label">Course</div><div class="fb-value" id="fb-c">0</div></div>
+            <div class="fb-plus">+</div>
+            <div class="fb-item"><div class="fb-label">Refusals</div><div class="fb-value" id="fb-r">0</div></div>
+            <div class="fb-plus">+</div>
+            <div class="fb-item"><div class="fb-label">Time Faults</div><div class="fb-value" id="fb-tf" style="color:var(--accent-yellow)">0</div></div>
+            <div class="fb-plus">=</div>
+            <div class="fb-item"><div class="fb-label">Total</div><div class="fb-value" id="fb-tot" style="color:var(--accent-orange);font-size:18px">0</div></div>
+          </div>
+          <div class="over-mct-warning" id="mct-warn">⚠️ OVER MAXIMUM COURSE TIME — Auto-Eliminated</div>
+          <div class="btn-row">
+            <button class="btn btn-eliminate" onclick="eliminateComp()">🚫 Eliminate</button>
+            <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+            <button class="btn btn-primary" onclick="submitScore()">✅ Save Score</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RANKING ===== -->
+  <div class="page" id="page-ranking">
+    <!-- Export bar -->
+    <div class="export-bar">
+      <span class="export-bar-label">Export</span>
+      <button class="btn btn-secondary btn-sm" onclick="exportExcel()">📊 Excel (.xlsx)</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportJSON()">💾 JSON Backup</button>
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer">📂 Import JSON <input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
+    </div>
+    <div class="size-filters" id="ranking-size-filters"></div>
+    <div id="ranking-course-info" class="course-info-bar"></div>
+    <div id="podium-container" class="podium"></div>
+    <div class="table-wrapper">
+      <div class="table-header-bar"><div class="table-title">🏆 Results <span class="count-badge" id="ranking-count">0</span></div></div>
+      <table><thead><tr><th style="width:45px">Rank</th><th style="width:45px">Size</th><th>Dog</th><th>Breed</th><th>Handler</th><th style="width:65px">C.Faults</th><th style="width:65px">Refusals</th><th style="width:65px">T.Faults</th><th style="width:75px">Total F</th><th style="width:90px">Time</th></tr></thead><tbody id="ranking-tbody"></tbody></table>
+    </div>
+    <div class="ranking-logic-note">
+      <strong>Ranking Logic:</strong>
+      ① Clear runs (Total Faults = 0) first, ranked by fastest time →
+      ② Then lowest Total Faults →
+      ③ Ties broken by fastest time →
+      ④ Eliminated last
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"><span>✅</span> <span id="toast-msg"></span></div>
+
+<script>
+// =================== CONFIG ===================
+const ROUNDS = ['Novice 1','Novice 2','Jumping Open 1','Jumping Open 2','Agility A1','Agility A2','Agility A3'];
+const SIZES = ['S','M','I','L'];
+const SIZE_LABELS = {S:'Small',M:'Medium',I:'Intermediate',L:'Large'};
+const HOST_PIN = '1234';
+
+// =================== STATE ===================
+let currentPage = 'running';
+let currentRound = ROUNDS[0];
+let activeSizes = {running:new Set(SIZES), ranking:'S', scoring:'S'};
+let selectedIdx = null;
+let hostUnlocked = false;
+let panels = {ctp:false, mgmt:false};
+
+// Course time config per round (same for all sizes)
+let courseTimeConfig = {
+  'Novice 1': { sct: 50, mct: 70 },
+  'Novice 2': { sct: 48, mct: 67 },
+  'Jumping Open 1': { sct: 40, mct: 56 },
+  'Jumping Open 2': { sct: 38, mct: 53 },
+  'Agility A1': { sct: 35, mct: 49 },
+  'Agility A2': { sct: 34, mct: 48 },
+  'Agility A3': { sct: 33, mct: 46 },
+};
+
+// Competitors data
+let competitors = [];
+
+// =================== INIT MOCK DATA ===================
+function initMockData() {
+  const dogs = [
+    {dog:'Pixel',human:'Anna Schmidt',size:'S',breed:'Papillon'},
+    {dog:'Mochi',human:'Yuki Tanaka',size:'S',breed:'Shetland Sheepdog'},
+    {dog:'Bean',human:'Laura Chen',size:'S',breed:'Jack Russell Terrier'},
+    {dog:'Nori',human:'Kim Soo-jin',size:'S',breed:'Pomeranian'},
+    {dog:'Toffee',human:'Emma Wilson',size:'S',breed:'Miniature Poodle'},
+    {dog:'Zara',human:'Marcus López',size:'M',breed:'Cocker Spaniel'},
+    {dog:'Flash',human:'Sophie Martin',size:'M',breed:'Whippet'},
+    {dog:'Kiki',human:'Jörg Weber',size:'M',breed:'Miniature Schnauzer'},
+    {dog:'Biscuit',human:'Chloe Davis',size:'M',breed:'Beagle'},
+    {dog:'Storm',human:'Lena Müller',size:'I',breed:'Australian Shepherd'},
+    {dog:'Blaze',human:'Oliver Park',size:'I',breed:'English Springer Spaniel'},
+    {dog:'Dash',human:'Nina Petrova',size:'I',breed:'Vizsla'},
+    {dog:'Ace',human:'Smile K.',size:'I',breed:'Borderpap'},
+    {dog:'Willow',human:'Raj Patel',size:'I',breed:'Brittany Spaniel'},
+    {dog:'Thunder',human:'Jake Thompson',size:'L',breed:'Border Collie'},
+    {dog:'Rex',human:'Maria Santos',size:'L',breed:'Belgian Malinois'},
+    {dog:'Atlas',human:'Finn O\'Brien',size:'L',breed:'German Shepherd'},
+    {dog:'Nova',human:'Elena Rossi',size:'L',breed:'Golden Retriever'},
+    {dog:'Chief',human:'Daniel Kim',size:'L',breed:'Labrador Retriever'},
+    {dog:'Rocket',human:'Smile K.',size:'L',breed:'Border Collie'},
+  ];
+
+  // Add to first 3 rounds
+  ['Novice 1','Novice 2','Jumping Open 1'].forEach(round => {
+    const orderBySz = {S:0,M:0,I:0,L:0};
+    dogs.forEach(d => {
+      orderBySz[d.size]++;
+      competitors.push({
+        id: crypto.randomUUID(),
+        round, size:d.size, order:orderBySz[d.size],
+        dog:d.dog, human:d.human, breed:d.breed,
+        fault:null, refusal:null, timeFault:null, totalFault:null, time:null, eliminated:false
+      });
+    });
+  });
+
+  // Pre-score some for Novice 1
+  const n1 = competitors.filter(c=>c.round==='Novice 1');
+  const preScore = (dog, f, r, t) => {
+    const c = n1.find(x=>x.dog===dog);
+    if(!c) return;
+    const ct = getCT(c.round,c.size);
+    c.fault=f; c.refusal=r; c.time=t;
+    if(t>ct.mct) { c.eliminated=true; } else {
+      c.timeFault=calcTF(t,ct.sct); c.totalFault=f+r+c.timeFault;
+    }
+  };
+  preScore('Mochi',0,0,32.45);
+  preScore('Bean',5,0,35.12);
+  preScore('Nori',0,5,33.88);
+  preScore('Zara',5,0,29.67);
+  preScore('Storm',0,0,27.34);
+  preScore('Blaze',5,5,29.91);
+  preScore('Dash',0,0,34.50);
+  preScore('Thunder',0,0,25.89);
+  preScore('Rex',5,0,26.43);
+  preScore('Atlas',0,0,26.12);
+  preScore('Nova',10,5,36.55);
+}
+
+function getCT(round,size) { return courseTimeConfig[round]||{sct:0,mct:0}; }
+function calcTF(time,sct) { if(!time||!sct||time<=sct)return 0; return Math.floor(time-sct); }
+function isOverMCT(time,mct) { return time && mct && time > mct; }
+
+const dogEmojis=['🐕','🐕‍🦺','🦮','🐩','🐶'];
+function emoji(n){let h=0;for(let c of n)h=((h<<5)-h)+c.charCodeAt(0);return dogEmojis[Math.abs(h)%dogEmojis.length];}
+
+// =================== PERSISTENCE ===================
+function saveState() {
+  try {
+    localStorage.setItem('paws_competitors', JSON.stringify(competitors));
+    localStorage.setItem('paws_courseTime', JSON.stringify(courseTimeConfig));
+  } catch(e) {}
+}
+function loadState() {
+  try {
+    const c = localStorage.getItem('paws_competitors');
+    const ct = localStorage.getItem('paws_courseTime');
+    if(c) competitors = JSON.parse(c);
+    if(ct) courseTimeConfig = JSON.parse(ct);
+    return !!c;
+  } catch(e) { return false; }
+}
+
+// =================== HOST PIN ===================
+function toggleHost() {
+  if(hostUnlocked) { hostUnlocked=false; updateHostUI(); return; }
+  document.getElementById('pin-modal').classList.add('show');
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-input').focus();
+  document.getElementById('pin-error').style.display='none';
+}
+function verifyPin() {
+  if(document.getElementById('pin-input').value===HOST_PIN) {
+    hostUnlocked=true;
+    document.getElementById('pin-modal').classList.remove('show');
+    updateHostUI();
+  } else {
+    document.getElementById('pin-error').style.display='block';
+  }
+}
+function updateHostUI() {
+  const btn=document.getElementById('host-btn');
+  if(hostUnlocked) { btn.className='host-indicator unlocked'; btn.textContent='🔓 Host Mode'; }
+  else { btn.className='host-indicator locked'; btn.textContent='🔒 Locked'; }
+}
+
+// =================== ROUND DROPDOWN ===================
+function buildRoundDropdown() {
+  const menu=document.getElementById('round-dd-menu');
+  menu.innerHTML=ROUNDS.map(r=>`<div class="round-option ${r===currentRound?'active':''}" onclick="selectRound('${r}')">${r}</div>`).join('');
+  document.getElementById('round-dd-label').textContent=currentRound;
+}
+function toggleRoundDropdown() {
+  const menu=document.getElementById('round-dd-menu');
+  const btn=document.getElementById('round-dd-btn');
+  menu.classList.toggle('open'); btn.classList.toggle('open');
+  // Close on outside click
+  if(menu.classList.contains('open')) {
+    setTimeout(()=>{
+      const close=e=>{if(!menu.contains(e.target)&&e.target!==btn){menu.classList.remove('open');btn.classList.remove('open');document.removeEventListener('click',close);}};
+      document.addEventListener('click',close);
+    },0);
+  }
+}
+function selectRound(r) {
+  currentRound=r;
+  document.getElementById('round-dd-menu').classList.remove('open');
+  document.getElementById('round-dd-btn').classList.remove('open');
+  buildRoundDropdown();
+  loadCTPInputs();
+  selectedIdx=null;
+  render();
+}
+
+// =================== PANELS ===================
+function togglePanel(name) {
+  panels[name]=!panels[name];
+  document.getElementById(name+'-body').classList.toggle('open',panels[name]);
+  document.getElementById(name+'-icon').textContent=panels[name]?'▲':'▼';
+}
+
+// =================== SIZE FILTERS ===================
+function buildSizeFilters(containerId, mode, activeVal) {
+  const c=document.getElementById(containerId);
+  if(!c)return;
+  if(mode==='multi') {
+    const set=activeSizes.running;
+    c.innerHTML='<label>Size</label>'+SIZES.map(s=>`<button class="size-pill ${set.has(s)?'active-'+s:''}" onclick="toggleRunningSize('${s}',this)">${s} — ${SIZE_LABELS[s]}</button>`).join('');
+  } else {
+    c.innerHTML='<label>Size</label>'+SIZES.map(s=>`<button class="size-pill ${activeVal===s?'active-'+s:''}" onclick="setSingleSize('${mode}','${s}',this)">${mode==='ranking'?s+' — '+SIZE_LABELS[s]:s}</button>`).join('');
+  }
+}
+function toggleRunningSize(s,el) {
+  const set=activeSizes.running;
+  if(set.has(s)){if(set.size>1)set.delete(s);}else set.add(s);
+  render();
+}
+function setSingleSize(mode,s,el) {
+  activeSizes[mode]=s;
+  if(mode==='scoring')selectedIdx=null;
+  render();
+}
+
+// =================== COURSE INFO BAR ===================
+function renderCIBar(id, sizes) {
+  const c=document.getElementById(id); if(!c)return;
+  const ct=courseTimeConfig[currentRound]||{sct:0,mct:0};
+  c.innerHTML=`<div class="course-info-chip"><span style="font-weight:700;font-size:12px">${currentRound}</span><span class="ci-label">SCT</span><span class="ci-value ci-sct">${ct.sct}s</span><span style="color:var(--text-muted)">|</span><span class="ci-label">MCT</span><span class="ci-value ci-mct">${ct.mct}s</span></div>`;
+}
+
+// =================== CTP ===================
+function loadCTPInputs() {
+  const grid=document.getElementById('ctp-grid');
+  const ct=courseTimeConfig[currentRound]||{sct:0,mct:0};
+  grid.innerHTML=`<div class="ctp-size-col" style="grid-column:1/-1;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+    <div class="ctp-size-label" style="margin-bottom:0;min-width:120px"><span style="font-size:14px">📍</span> ${currentRound}</div>
+    <div class="ctp-field" style="margin-bottom:0;flex:1;min-width:140px"><label>Standard Course Time (sec)</label><input type="number" step="0.01" id="ctp-sct" value="${ct.sct}" onchange="saveCTP()"></div>
+    <div class="ctp-field" style="margin-bottom:0;flex:1;min-width:140px"><label>Max Course Time (sec)</label><input type="number" step="0.01" id="ctp-mct" value="${ct.mct}" onchange="saveCTP()"></div>
+  </div>`;
+}
+function saveCTP() {
+  const sct=parseFloat(document.getElementById('ctp-sct').value)||0;
+  const mct=parseFloat(document.getElementById('ctp-mct').value)||0;
+  courseTimeConfig[currentRound]={sct,mct};
+  // Recompute all scores for this round
+  competitors.filter(c=>c.round===currentRound&&c.time!==null).forEach(c=>{
+    if(isOverMCT(c.time,mct)){c.eliminated=true;c.timeFault=null;c.totalFault=null;}
+    else{c.eliminated=false;c.timeFault=calcTF(c.time,sct);c.totalFault=(c.fault||0)+(c.refusal||0)+c.timeFault;}
+  });
+  saveState();
+  toast('Course times updated');
+  render();
+}
+
+// =================== DOG MANAGEMENT ===================
+function addDog() {
+  const dog=document.getElementById('add-dog').value.trim();
+  const human=document.getElementById('add-human').value.trim();
+  const breed=document.getElementById('add-breed').value.trim();
+  const size=document.getElementById('add-size').value;
+  if(!dog||!human){toast('Please fill in dog name and handler');return;}
+  const existing=competitors.filter(c=>c.round===currentRound&&c.size===size);
+  const maxOrder=existing.reduce((m,c)=>Math.max(m,c.order),0);
+  competitors.push({
+    id:crypto.randomUUID(), round:currentRound, size, order:maxOrder+1,
+    dog, human, breed:breed||'—',
+    fault:null, refusal:null, timeFault:null, totalFault:null, time:null, eliminated:false
+  });
+  document.getElementById('add-dog').value='';
+  document.getElementById('add-human').value='';
+  document.getElementById('add-breed').value='';
+  saveState();
+  toast(`${dog} added to ${currentRound} (${size})`);
+  render();
+}
+function removeDog(id) {
+  const c=competitors.find(x=>x.id===id);
+  if(!c)return;
+  if(!confirm(`Remove ${c.dog} (${c.human}) from ${c.round}?`))return;
+  competitors=competitors.filter(x=>x.id!==id);
+  // Reorder
+  const group=competitors.filter(x=>x.round===c.round&&x.size===c.size).sort((a,b)=>a.order-b.order);
+  group.forEach((g,i)=>g.order=i+1);
+  saveState();
+  toast(`${c.dog} removed`);
+  render();
+}
+function renderMgmtList() {
+  const data=competitors.filter(c=>c.round===currentRound).sort((a,b)=>a.size.localeCompare(b.size)||a.order-b.order);
+  const list=document.getElementById('mgmt-list');
+  if(!data.length){list.innerHTML='<div style="padding:16px;color:var(--text-muted);text-align:center;font-size:13px">No competitors yet. Add one above.</div>';return;}
+  list.innerHTML=data.map(c=>`<div class="mgmt-dog-item"><span class="mgmt-order">${c.order}</span><span class="size-tag size-tag-${c.size}" style="flex-shrink:0">${c.size}</span><div class="mgmt-info"><div class="mgmt-dog-name">${emoji(c.dog)} ${c.dog} <span style="font-weight:400;color:var(--text-muted);font-size:11px">${c.breed||''}</span></div><div class="mgmt-human-name">${c.human}</div></div><button class="mgmt-remove-btn" onclick="removeDog('${c.id}')">✕ Remove</button></div>`).join('');
+}
+
+// =================== RENDER ===================
+function render() {
+  buildSizeFilters('running-size-filters','multi');
+  buildSizeFilters('scoring-size-filters','scoring',activeSizes.scoring);
+  buildSizeFilters('ranking-size-filters','ranking',activeSizes.ranking);
+  if(currentPage==='running')renderRunning();
+  if(currentPage==='scoring')renderScoring();
+  if(currentPage==='ranking')renderRanking();
+}
+
+function renderRunning() {
+  const szArr=[...activeSizes.running];
+  renderCIBar('running-course-info',szArr);
+  const data=competitors.filter(c=>c.round===currentRound&&activeSizes.running.has(c.size)).sort((a,b)=>a.size.localeCompare(b.size)||a.order-b.order);
+  document.getElementById('running-count').textContent=data.length;
+  const nr=data.find(c=>c.totalFault===null&&!c.eliminated);
+  const banner=document.getElementById('now-running-banner');
+  if(nr){
+    document.getElementById('nr-dog').textContent=emoji(nr.dog)+' '+nr.dog;
+    document.getElementById('nr-human').textContent=nr.human;
+    document.getElementById('nr-size').innerHTML=`<span class="size-tag size-tag-${nr.size}">${nr.size}</span> ${SIZE_LABELS[nr.size]}`;
+    document.getElementById('nr-order').textContent='#'+nr.order;
+    banner.style.display='flex';
+  } else banner.style.display='none';
+  document.getElementById('running-tbody').innerHTML=data.map(c=>{
+    let st='';
+    if(c.eliminated)st='<span class="status-indicator status-waiting">🚫 Elim</span>';
+    else if(c.totalFault!==null)st='<span class="status-indicator status-done"><span class="status-dot"></span>Done</span>';
+    else if(nr&&c.id===nr.id)st='<span class="status-indicator status-running"><span class="status-dot"></span>Running</span>';
+    else st='<span class="status-indicator status-waiting"><span class="status-dot"></span>Waiting</span>';
+    return `<tr class="${c.eliminated?'eliminated-row':''}"><td><span class="order-num">${c.order}</span></td><td><span class="size-tag size-tag-${c.size}">${c.size}</span></td><td><span class="dog-name">${emoji(c.dog)} ${c.dog}</span></td><td style="color:var(--text-secondary);font-size:12px">${c.breed||'—'}</td><td><span class="human-name">${c.human}</span></td><td>${st}</td></tr>`;
+  }).join('');
+}
+
+function renderScoring() {
+  loadCTPInputs();
+  renderCIBar('scoring-course-info',activeSizes.scoring);
+  renderMgmtList();
+  const sz=activeSizes.scoring;
+  const data=competitors.filter(c=>c.round===currentRound&&c.size===sz).sort((a,b)=>a.order-b.order);
+  document.getElementById('scoring-queue-list').innerHTML=data.map(c=>{
+    const isActive=selectedIdx===c.id;
+    const scored=c.totalFault!==null||c.eliminated;
+    return `<div class="queue-item ${isActive?'active-queue':''} ${scored?'scored':''}" onclick="selectComp('${c.id}')"><span class="queue-order">${c.order}</span><div><div class="queue-dog">${emoji(c.dog)} ${c.dog} ${c.eliminated?'<span class="elim-badge">ELIM</span>':''}</div><div class="queue-human">${c.human} · <span style="color:var(--text-muted)">${c.breed||''}</span></div></div></div>`;
+  }).join('');
+  if(selectedIdx){
+    const c=competitors.find(x=>x.id===selectedIdx);
+    if(c){
+      document.getElementById('form-dog-name').textContent=emoji(c.dog)+' '+c.dog;
+      document.getElementById('form-human').textContent=c.human;
+      document.getElementById('form-size-tag').innerHTML=`<span class="size-tag size-tag-${c.size}">${c.size}</span> ${c.breed||''}`;
+      document.getElementById('form-order-tag').textContent='#'+c.order;
+      document.getElementById('inp-fault').value=c.fault??'';
+      document.getElementById('inp-refusal').value=c.refusal??'';
+      document.getElementById('inp-time').value=c.time??'';
+      recalc();
+      return;
+    }
+  }
+  document.getElementById('form-dog-name').textContent='Select a competitor';
+  document.getElementById('form-human').textContent='—';
+  document.getElementById('form-size-tag').innerHTML='';
+  document.getElementById('form-order-tag').textContent='';
+  clearForm();
+}
+
+function selectComp(id) { selectedIdx=id; renderScoring(); }
+
+function recalc() {
+  const f=parseInt(document.getElementById('inp-fault').value)||0;
+  const r=parseInt(document.getElementById('inp-refusal').value)||0;
+  const t=parseFloat(document.getElementById('inp-time').value)||0;
+  const ct=getCT(currentRound,activeSizes.scoring);
+  const tf=calcTF(t,ct.sct);
+  const over=isOverMCT(t,ct.mct);
+  document.getElementById('fb-c').textContent=f;
+  document.getElementById('fb-r').textContent=r;
+  document.getElementById('fb-tf').textContent=tf;
+  document.getElementById('fb-tf').style.color=tf>0?'var(--accent-yellow)':'var(--accent-green)';
+  document.getElementById('fb-tot').textContent=over?'ELIM':f+r+tf;
+  document.getElementById('fb-tot').style.color=over?'var(--accent-red)':(f+r+tf===0?'var(--accent-green)':'var(--accent-orange)');
+  document.getElementById('mct-warn').style.display=over?'block':'none';
+}
+
+function clearForm() {
+  ['inp-fault','inp-refusal','inp-time'].forEach(id=>document.getElementById(id).value='');
+  ['fb-c','fb-r','fb-tf'].forEach(id=>document.getElementById(id).textContent='0');
+  document.getElementById('fb-tot').textContent='0';
+  document.getElementById('mct-warn').style.display='none';
+}
+
+function submitScore() {
+  if(!selectedIdx)return;
+  const c=competitors.find(x=>x.id===selectedIdx);
+  if(!c)return;
+  const f=parseInt(document.getElementById('inp-fault').value)||0;
+  const r=parseInt(document.getElementById('inp-refusal').value)||0;
+  const t=parseFloat(document.getElementById('inp-time').value)||0;
+  const ct=getCT(currentRound,c.size);
+  if(isOverMCT(t,ct.mct)){
+    c.fault=f;c.refusal=r;c.time=t;c.timeFault=null;c.totalFault=null;c.eliminated=true;
+    toast(`${c.dog} eliminated — over MCT (${ct.mct}s)`);
+  } else {
+    const tf=calcTF(t,ct.sct);
+    c.fault=f;c.refusal=r;c.time=t;c.timeFault=tf;c.totalFault=f+r+tf;c.eliminated=false;
+    toast(`Score saved for ${c.dog}! Total: ${c.totalFault} faults`);
+  }
+  saveState(); renderScoring();
+}
+
+function eliminateComp() {
+  if(!selectedIdx)return;
+  const c=competitors.find(x=>x.id===selectedIdx);
+  if(!c)return;
+  c.eliminated=true;c.fault=null;c.refusal=null;c.timeFault=null;c.totalFault=null;c.time=null;
+  saveState(); toast(`${c.dog} eliminated`); renderScoring();
+}
+
+// =================== RANKING ===================
+function rankData(data) {
+  const scored=data.filter(c=>c.totalFault!==null&&!c.eliminated);
+  const clear=scored.filter(c=>c.totalFault===0).sort((a,b)=>a.time-b.time);
+  const faulted=scored.filter(c=>c.totalFault>0).sort((a,b)=>a.totalFault!==b.totalFault?a.totalFault-b.totalFault:a.time-b.time);
+  return [...clear,...faulted];
+}
+
+function renderRanking() {
+  const sz=activeSizes.ranking;
+  renderCIBar('ranking-course-info',sz);
+  const data=competitors.filter(c=>c.round===currentRound&&c.size===sz);
+  const ranked=rankData(data);
+  const elim=data.filter(c=>c.eliminated);
+  const pending=data.filter(c=>c.totalFault===null&&!c.eliminated);
+  document.getElementById('ranking-count').textContent=ranked.length+' scored';
+
+  const podium=document.getElementById('podium-container');
+  if(ranked.length>=3){
+    const p=[ranked[1],ranked[0],ranked[2]];const pl=[2,1,3];
+    podium.innerHTML=p.map((c,i)=>`<div class="podium-place podium-${pl[i]}"><div class="podium-avatar">${emoji(c.dog)}</div><div class="podium-name">${c.dog}</div><div class="podium-dog-name">${c.human}</div><div class="podium-score">${c.totalFault}F · ${c.time.toFixed(2)}s</div><div class="podium-bar">${pl[i]}</div></div>`).join('');
+    podium.style.display='flex';
+  } else podium.style.display='none';
+
+  const all=[...ranked.map((c,i)=>({...c,rank:i+1})),...elim.map(c=>({...c,rank:'—',isElim:true})),...pending.map(c=>({...c,rank:'—',isPending:true}))];
+  document.getElementById('ranking-tbody').innerHTML=all.map(c=>{
+    let rk='';
+    if(c.rank===1)rk='<span class="rank-medal rank-1">🥇</span>';
+    else if(c.rank===2)rk='<span class="rank-medal rank-2">🥈</span>';
+    else if(c.rank===3)rk='<span class="rank-medal rank-3">🥉</span>';
+    else if(typeof c.rank==='number')rk=`<span class="rank-medal rank-other">${c.rank}</span>`;
+    else rk='<span class="rank-medal rank-other">—</span>';
+
+    if(c.isElim)return `<tr class="eliminated-row"><td>${rk}</td><td><span class="size-tag size-tag-${c.size}">${c.size}</span></td><td>${emoji(c.dog)} ${c.dog}</td><td style="color:var(--text-secondary);font-size:12px">${c.breed||'—'}</td><td>${c.human}</td><td colspan="5"><span class="elim-badge">ELIMINATED</span></td></tr>`;
+    if(c.isPending)return `<tr style="opacity:0.4"><td>${rk}</td><td><span class="size-tag size-tag-${c.size}">${c.size}</span></td><td>${emoji(c.dog)} ${c.dog}</td><td style="color:var(--text-secondary);font-size:12px">${c.breed||'—'}</td><td>${c.human}</td><td colspan="5" style="color:var(--text-muted);font-style:italic">Pending…</td></tr>`;
+    const isClear=c.totalFault===0;
+    return `<tr><td>${rk}</td><td><span class="size-tag size-tag-${c.size}">${c.size}</span></td><td><span class="dog-name">${emoji(c.dog)} ${c.dog} ${isClear?'<span class="clear-run-badge">CLEAR</span>':''}</span></td><td style="color:var(--text-secondary);font-size:12px">${c.breed||'—'}</td><td>${c.human}</td><td class="${c.fault===0?'fault-zero':''}">${c.fault}</td><td class="${c.refusal===0?'fault-zero':''}">${c.refusal}</td><td class="${(c.timeFault||0)===0?'fault-zero':''}" style="font-family:'JetBrains Mono',monospace">${c.timeFault||0}</td><td style="font-weight:700;font-family:'JetBrains Mono',monospace;${isClear?'color:var(--accent-green)':'color:var(--accent-orange)'}">${c.totalFault}</td><td style="font-family:'JetBrains Mono',monospace">${c.time.toFixed(2)}s${(c.timeFault||0)>0?`<span class="time-fault-badge">+${c.timeFault}TF</span>`:''}</td></tr>`;
+  }).join('');
+}
+
+// =================== EXPORT ===================
+function exportExcel() {
+  const wb=XLSX.utils.book_new();
+  ROUNDS.forEach(round=>{
+    const data=competitors.filter(c=>c.round===round).sort((a,b)=>a.size.localeCompare(b.size)||a.order-b.order);
+    if(!data.length)return;
+    const ct=courseTimeConfig[round]||{sct:0,mct:0};
+    // Header rows with SCT/MCT
+    const rows=[];
+    rows.push(['Round:',round]);
+    rows.push(['SCT:',ct.sct,'MCT:',ct.mct]);
+    rows.push([]);
+    rows.push(['Rank','Size','Order','Dog','Breed','Handler','C.Faults','Refusals','T.Faults','Total Faults','Time','Status']);
+    // Rank per size
+    SIZES.forEach(sz=>{
+      const szData=data.filter(c=>c.size===sz);
+      const ranked=rankData(szData);
+      const elim=szData.filter(c=>c.eliminated);
+      const pending=szData.filter(c=>c.totalFault===null&&!c.eliminated);
+      [...ranked.map((c,i)=>({...c,rank:i+1})),...elim.map(c=>({...c,rank:'E'})),...pending.map(c=>({...c,rank:'—'}))].forEach(c=>{
+        rows.push([c.rank,c.size,c.order,c.dog,c.breed||'',c.human,c.fault??'',c.refusal??'',c.timeFault??'',c.totalFault??'',c.time??'',c.eliminated?'Eliminated':c.totalFault!==null?'Done':'Pending']);
+      });
+    });
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:6},{wch:6},{wch:6},{wch:14},{wch:18},{wch:18},{wch:9},{wch:9},{wch:9},{wch:11},{wch:8},{wch:10}];
+    const safeName=round.replace(/[\\\/\?\*\[\]]/g,'').substring(0,31);
+    XLSX.utils.book_append_sheet(wb,ws,safeName);
+  });
+  XLSX.writeFile(wb,'PawsAndSpeed_Results.xlsx');
+  toast('Excel exported!');
+}
+
+function exportJSON() {
+  const payload={competitors,courseTimeConfig,exportDate:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='PawsAndSpeed_Backup.json';a.click();
+  toast('JSON backup exported!');
+}
+
+function importJSON(e) {
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try {
+      const d=JSON.parse(ev.target.result);
+      if(d.competitors)competitors=d.competitors;
+      if(d.courseTimeConfig)Object.assign(courseTimeConfig,d.courseTimeConfig);
+      saveState();
+      toast('Data imported successfully!');
+      render();
+    }catch(err){toast('Invalid JSON file');}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// =================== NAV ===================
+function switchPage(page) {
+  if(page==='scoring'&&!hostUnlocked){toggleHost();return;}
+  currentPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+page).classList.add('active');
+  render();
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// =================== INIT ===================
+// Check if stored data has breed field; if not, reset
+const hasBreedField = (() => { try { const c=JSON.parse(localStorage.getItem('paws_competitors')||'[]'); return c.length===0||c[0].breed!==undefined; } catch(e){return false;} })();
+if(!hasBreedField||!loadState()) { localStorage.removeItem('paws_competitors'); localStorage.removeItem('paws_courseTime'); initMockData(); saveState(); }
+buildRoundDropdown();
+loadCTPInputs();
+render();
+</script>
+</body>
+</html>
