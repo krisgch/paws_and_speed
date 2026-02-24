@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Competitor, CourseTimeConfig, Size } from '../types/index.ts';
-import { SIZES, SIZE_LABELS } from '../constants/index.ts';
+import { SIZES, SIZE_LABELS, dogEmoji } from '../constants/index.ts';
 import { rankCompetitors } from './scoring.ts';
 
 export function exportExcel(competitors: Competitor[], courseTimeConfig: CourseTimeConfig, rounds: readonly string[]) {
@@ -153,55 +153,57 @@ export function exportSharePNG(
   competitors: Competitor[],
   courseTimeConfig: CourseTimeConfig
 ): void {
-  const data = competitors
-    .filter((c) => c.round === round && c.size === size)
-    .sort((a, b) => a.order - b.order);
-
+  const data = competitors.filter((c) => c.round === round && c.size === size);
   if (!data.length) return;
 
+  const ranked = rankCompetitors(data);
   const ct = courseTimeConfig[round] ?? { sct: 0, mct: 0 };
   const sizeColor = SIZE_COLORS[size] ?? '#f0f2f8';
   const sizeLabel = SIZE_LABELS[size] ?? size;
 
-  const W = 520;
-  const HEADER_H = 104;
-  const ROW_H = 44;
-  const FOOTER_H = 40;
-  const height = HEADER_H + data.length * ROW_H + FOOTER_H;
-  const DPR = 2;
+  const W = 600;
+  const HEADER_H = 96;
 
+  // Podium: show only when at least 3 scored competitors
+  const top3 = ranked.filter((c) => c.rank !== null).slice(0, 3);
+  const hasPodium = top3.length >= 3;
+  const PODIUM_H = hasPodium ? 230 : 0;
+
+  // Table layout
+  const TABLE_HDR_H = 32;
+  const ROW_H = 42;
+  const FOOTER_H = 40;
+  const height = HEADER_H + PODIUM_H + TABLE_HDR_H + ranked.length * ROW_H + FOOTER_H;
+
+  const DPR = 2;
   const canvas = document.createElement('canvas');
   canvas.width = W * DPR;
   canvas.height = height * DPR;
   const ctx = canvas.getContext('2d')!;
   ctx.scale(DPR, DPR);
 
-  // Background
+  // ── Background ──────────────────────────────────────────────────────────────
   ctx.fillStyle = '#0c0e12';
   ctx.fillRect(0, 0, W, height);
 
-  // Header gradient
+  // ── Header ──────────────────────────────────────────────────────────────────
   const grad = ctx.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, 'rgba(255,107,44,0.18)');
   grad.addColorStop(1, 'rgba(255,107,44,0.03)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, HEADER_H);
 
-  // Left accent bar
   ctx.fillStyle = '#ff6b2c';
   ctx.fillRect(0, 0, 3, HEADER_H);
 
-  // Brand
   ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
   ctx.fillStyle = '#ff6b2c';
   ctx.fillText('PAWS & SPEED', 18, 24);
 
-  // Round name
   ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
   ctx.fillStyle = '#f0f2f8';
   ctx.fillText(round.toUpperCase(), 18, 52);
 
-  // Size badge
   ctx.fillStyle = `${sizeColor}22`;
   roundRect(ctx, 18, 62, 118, 24, 6);
   ctx.fill();
@@ -209,78 +211,198 @@ export function exportSharePNG(
   ctx.fillStyle = sizeColor;
   ctx.fillText(`${size}  ·  ${sizeLabel}`, 28, 78);
 
-  // SCT / MCT
   ctx.font = '11px system-ui, -apple-system, sans-serif';
   ctx.fillStyle = '#8b90a5';
   ctx.fillText(`SCT ${ct.sct}s  ·  MCT ${ct.mct}s`, 148, 78);
 
-  // Header divider
   ctx.fillStyle = 'rgba(42,47,64,0.8)';
   ctx.fillRect(0, HEADER_H, W, 1);
 
-  // Rows
-  data.forEach((c, i) => {
-    const y = HEADER_H + i * ROW_H;
+  // ── Podium ───────────────────────────────────────────────────────────────────
+  if (hasPodium) {
+    // Display order: 2nd (left), 1st (center), 3rd (right)
+    const podiumOrder = [top3[1], top3[0], top3[2]];
+    const podiumColors  = ['#94a3b8', '#fbbf24', '#d97706'];
+    const placeLabels   = ['2', '1', '3'];
+    const barHeights    = [68, 90, 50];
+    const colCenters    = [W / 4, W / 2, (W * 3) / 4]; // 150, 300, 450
+    const BAR_W = 110;
+    const FLOOR_Y = HEADER_H + PODIUM_H - 20;
 
-    // Alternating row bg
+    function truncate(text: string, maxW: number): string {
+      if (ctx.measureText(text).width <= maxW) return text;
+      let s = text;
+      while (s.length > 0 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+      return s + '…';
+    }
+
+    podiumOrder.forEach((c, i) => {
+      const color = podiumColors[i];
+      const barH  = barHeights[i];
+      const cx    = colCenters[i];
+      const barX  = cx - BAR_W / 2;
+      const barY  = FLOOR_Y - barH;
+
+      // Bar background
+      ctx.fillStyle = `${color}22`;
+      roundRect(ctx, barX, barY, BAR_W, barH, 8);
+      ctx.fill();
+      ctx.strokeStyle = `${color}55`;
+      ctx.lineWidth = 1;
+      roundRect(ctx, barX, barY, BAR_W, barH, 8);
+      ctx.stroke();
+
+      // Place number inside bar
+      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.fillText(placeLabels[i], cx, barY + barH / 2 + 9);
+
+      // Info above bar (built bottom-up)
+      let iy = barY - 8;
+
+      // Score
+      ctx.font = '10px "Courier New", Courier, monospace';
+      ctx.fillStyle = '#555b73';
+      ctx.fillText(`${c.totalFault}F · ${c.time?.toFixed(2)}s`, cx, iy);
+      iy -= 17;
+
+      // Handler
+      ctx.font = '11px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#8b90a5';
+      ctx.fillText(truncate(c.human, BAR_W - 8), cx, iy);
+      iy -= 17;
+
+      // Dog name
+      ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#f0f2f8';
+      ctx.fillText(truncate(c.dog, BAR_W - 8), cx, iy);
+      iy -= 10;
+
+      // Avatar circle
+      const AVATAR_R = 24;
+      const avatarCy = iy - AVATAR_R;
+      ctx.beginPath();
+      ctx.arc(cx, avatarCy, AVATAR_R, 0, Math.PI * 2);
+      ctx.fillStyle = `${color}1a`;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Emoji inside avatar
+      ctx.font = '20px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#f0f2f8';
+      ctx.fillText(c.icon || dogEmoji(c.dog), cx, avatarCy + 7);
+
+      ctx.textAlign = 'left';
+    });
+
+    ctx.fillStyle = 'rgba(42,47,64,0.5)';
+    ctx.fillRect(0, HEADER_H + PODIUM_H, W, 1);
+  }
+
+  // ── Results table ────────────────────────────────────────────────────────────
+  const tableY = HEADER_H + PODIUM_H;
+
+  // Column x positions (total usable = 600 - 32 = 568px)
+  const cols = [
+    { label: 'Rank',    x: 16  },
+    { label: 'Dog',     x: 60  },
+    { label: 'Handler', x: 215 },
+    { label: 'C.F',     x: 338 },
+    { label: 'Ref',     x: 381 },
+    { label: 'T.F',     x: 424 },
+    { label: 'Total F', x: 467 },
+    { label: 'Time',    x: 524 },
+  ];
+
+  // Table header row
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(0, tableY, W, TABLE_HDR_H);
+  cols.forEach((col) => {
+    ctx.font = 'bold 9px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#555b73';
+    ctx.textAlign = 'left';
+    ctx.fillText(col.label.toUpperCase(), col.x, tableY + 20);
+  });
+  ctx.fillStyle = 'rgba(42,47,64,0.8)';
+  ctx.fillRect(0, tableY + TABLE_HDR_H, W, 1);
+
+  // Data rows
+  ranked.forEach((c, i) => {
+    const ry = tableY + TABLE_HDR_H + i * ROW_H;
+
     if (i % 2 === 0) {
       ctx.fillStyle = 'rgba(255,255,255,0.018)';
-      ctx.fillRect(0, y, W, ROW_H);
+      ctx.fillRect(0, ry, W, ROW_H);
     }
-
-    // Row divider
     if (i > 0) {
       ctx.fillStyle = 'rgba(42,47,64,0.35)';
-      ctx.fillRect(16, y, W - 32, 1);
+      ctx.fillRect(16, ry, W - 32, 1);
     }
 
-    const centerY = y + ROW_H / 2;
+    const cy = ry + ROW_H / 2 + 5;
 
-    // Order #
-    ctx.font = 'bold 13px "Courier New", Courier, monospace';
-    ctx.fillStyle = '#ff6b2c';
-    const orderStr = String(c.order).padStart(2, ' ');
-    ctx.fillText(orderStr, 18, centerY + 5);
-
-    // Size dot
-    ctx.fillStyle = SIZE_COLORS[c.size] ?? sizeColor;
-    ctx.beginPath();
-    ctx.arc(56, centerY, 5, 0, Math.PI * 2);
-    ctx.fill();
+    // Rank
+    ctx.textAlign = 'left';
+    if (c.rank === 1 || c.rank === 2 || c.rank === 3) {
+      const medal = c.rank === 1 ? '🥇' : c.rank === 2 ? '🥈' : '🥉';
+      ctx.font = '16px system-ui, -apple-system, sans-serif';
+      ctx.fillText(medal, cols[0].x, cy);
+    } else if (c.rank) {
+      ctx.font = 'bold 12px "Courier New", Courier, monospace';
+      ctx.fillStyle = '#8b90a5';
+      ctx.fillText(String(c.rank), cols[0].x, cy);
+    } else {
+      ctx.font = '12px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#555b73';
+      ctx.fillText('—', cols[0].x, cy);
+    }
 
     // Dog name
-    ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#f0f2f8';
-    ctx.fillText(c.dog, 70, centerY - 3);
+    const dogLabel = `${c.icon || dogEmoji(c.dog)} ${c.dog}`;
+    ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = c.eliminated ? '#555b73' : '#f0f2f8';
+    ctx.fillText(dogLabel, cols[1].x, cy);
 
-    // Breed
-    ctx.font = '11px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#555b73';
-    ctx.fillText(c.breed || '', 70, centerY + 13);
-
-    // Handler (right-aligned)
+    // Handler
     ctx.font = '12px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#8b90a5';
-    const handlerW = ctx.measureText(c.human).width;
-    ctx.fillText(c.human, W - 18 - handlerW, centerY - 3);
+    ctx.fillText(c.human, cols[2].x, cy);
 
-    // Status / score (right-aligned, below handler)
     if (c.eliminated) {
       ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#ef4444';
-      const elimW = ctx.measureText('ELIM').width;
-      ctx.fillText('ELIM', W - 18 - elimW, centerY + 13);
-    } else if (c.totalFault !== null && c.time !== null) {
-      const scoreStr = `${c.totalFault}F  ${c.time.toFixed(2)}s`;
-      ctx.font = 'bold 10px "Courier New", Courier, monospace';
+      ctx.fillText('ELIMINATED', cols[3].x, cy);
+    } else if (c.rank !== null) {
+      ctx.font = '12px "Courier New", Courier, monospace';
+
+      ctx.fillStyle = (c.fault ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8';
+      ctx.fillText(String(c.fault ?? 0), cols[3].x, cy);
+
+      ctx.fillStyle = (c.refusal ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8';
+      ctx.fillText(String(c.refusal ?? 0), cols[4].x, cy);
+
+      ctx.fillStyle = (c.timeFault ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8';
+      ctx.fillText(String(c.timeFault ?? 0), cols[5].x, cy);
+
+      ctx.font = 'bold 12px "Courier New", Courier, monospace';
       ctx.fillStyle = c.totalFault === 0 ? '#2dd4a0' : '#ff6b2c';
-      const scoreW = ctx.measureText(scoreStr).width;
-      ctx.fillText(scoreStr, W - 18 - scoreW, centerY + 13);
+      ctx.fillText(String(c.totalFault ?? 0), cols[6].x, cy);
+
+      ctx.font = '12px "Courier New", Courier, monospace';
+      ctx.fillStyle = '#f0f2f8';
+      ctx.fillText(c.time ? `${c.time.toFixed(2)}s` : '', cols[7].x, cy);
+    } else {
+      ctx.font = 'italic 11px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#555b73';
+      ctx.fillText('Pending…', cols[3].x, cy);
     }
   });
 
-  // Footer
-  const footerY = HEADER_H + data.length * ROW_H;
+  // ── Footer ───────────────────────────────────────────────────────────────────
+  const footerY = tableY + TABLE_HDR_H + ranked.length * ROW_H;
   ctx.fillStyle = 'rgba(42,47,64,0.5)';
   ctx.fillRect(0, footerY, W, 1);
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
@@ -288,18 +410,19 @@ export function exportSharePNG(
 
   ctx.font = '11px system-ui, -apple-system, sans-serif';
   ctx.fillStyle = '#555b73';
+  ctx.textAlign = 'left';
   ctx.fillText('paws-and-speed', 18, footerY + 25);
 
   const dateStr = new Date().toLocaleDateString();
-  const dateW = ctx.measureText(dateStr).width;
-  ctx.fillText(dateStr, W - 18 - dateW, footerY + 25);
+  ctx.textAlign = 'right';
+  ctx.fillText(dateStr, W - 18, footerY + 25);
 
   canvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PawsAndSpeed_${round.replace(/\s+/g, '_')}_${size}.png`;
+    a.download = `PawsAndSpeed_${round.replace(/\s+/g, '_')}_${size}_Ranking.png`;
     a.click();
     URL.revokeObjectURL(url);
   }, 'image/png');
