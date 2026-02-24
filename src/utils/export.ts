@@ -347,9 +347,25 @@ export function exportSharePNG(
     // Rank
     ctx.textAlign = 'left';
     if (c.rank === 1 || c.rank === 2 || c.rank === 3) {
-      const medal = c.rank === 1 ? '🥇' : c.rank === 2 ? '🥈' : '🥉';
-      ctx.font = '16px system-ui, -apple-system, sans-serif';
-      ctx.fillText(medal, cols[0].x, cy);
+      const medalColor = c.rank === 1 ? '#fbbf24' : c.rank === 2 ? '#94a3b8' : '#d97706';
+      const BADGE_R = 11;
+      const bx = cols[0].x + BADGE_R;
+      const by = cy - 5;
+      // Filled circle background
+      ctx.beginPath();
+      ctx.arc(bx, by, BADGE_R, 0, Math.PI * 2);
+      ctx.fillStyle = `${medalColor}28`;
+      ctx.fill();
+      // Circle border
+      ctx.strokeStyle = medalColor;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Rank number centered
+      ctx.font = `bold 11px system-ui, -apple-system, sans-serif`;
+      ctx.fillStyle = medalColor;
+      ctx.textAlign = 'center';
+      ctx.fillText(String(c.rank), bx, by + 4);
+      ctx.textAlign = 'left';
     } else if (c.rank) {
       ctx.font = 'bold 12px "Courier New", Courier, monospace';
       ctx.fillStyle = '#8b90a5';
