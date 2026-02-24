@@ -6,12 +6,11 @@ import Podium from '../components/Podium.tsx';
 import SizeTag from '../components/SizeTag.tsx';
 import { dogEmoji, SIZES, SIZE_LABELS } from '../constants/index.ts';
 import { rankCompetitors } from '../utils/scoring.ts';
-import { exportExcel, exportJSON, exportPDF, importJSON, exportSharePNG } from '../utils/export.ts';
+import { exportExcel, exportPDF, exportSharePNG } from '../utils/export.ts';
 import type { Size } from '../types/index.ts';
 
 export default function Ranking() {
-  const { competitors, currentRound, rounds, courseTimeConfig, rankingSizeFilter, setRankingSizeFilter, importData, showToast } = useStore();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { competitors, currentRound, rounds, courseTimeConfig, rankingSizeFilter, setRankingSizeFilter, showToast } = useStore();
   const [shareOpen, setShareOpen] = useState(false);
 
   const data = competitors.filter((c) => c.round === currentRound && c.size === rankingSizeFilter);
@@ -28,11 +27,6 @@ export default function Ranking() {
     showToast('PDF exported!');
   };
 
-  const handleExportJSON = () => {
-    exportJSON(competitors, courseTimeConfig);
-    showToast('JSON backup exported!');
-  };
-
   const availableSizes = SIZES.filter((s) =>
     competitors.some((c) => c.round === currentRound && c.size === s)
   );
@@ -41,17 +35,6 @@ export default function Ranking() {
     exportSharePNG(currentRound, size, competitors, courseTimeConfig);
     setShareOpen(false);
     showToast(`PNG exported for ${SIZE_LABELS[size]}!`);
-  };
-
-  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    importJSON(
-      file,
-      (d) => { importData(d); showToast('Data imported successfully!'); },
-      () => showToast('Invalid JSON file')
-    );
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // Separate scored with rank from eliminated and pending for display
@@ -79,11 +62,6 @@ export default function Ranking() {
         <span className="text-[12px] font-semibold uppercase tracking-[1px] mr-2" style={{ color: '#555b73' }}>Export</span>
         <button onClick={handleExportExcel} style={btnStyle}>📊 Excel (.xlsx)</button>
         <button onClick={handleExportPDF} style={btnStyle}>📄 PDF</button>
-        <button onClick={handleExportJSON} style={btnStyle}>💾 JSON Backup</button>
-        <label style={{ ...btnStyle, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-          📂 Import JSON
-          <input ref={fileInputRef} type="file" accept=".json" onChange={handleImportJSON} style={{ display: 'none' }} />
-        </label>
         {/* Share PNG */}
         <div className="relative">
           <button
