@@ -13,6 +13,7 @@ interface AppStore {
   // Navigation
   currentPage: Page;
   currentRound: string;
+  liveRound: string;      // The round currently being actively competed
   hostUnlocked: boolean;
 
   // Rounds (dynamic)
@@ -41,6 +42,7 @@ interface AppStore {
   // Actions
   setPage: (page: Page) => void;
   setRound: (round: string) => void;
+  setLiveRound: (round: string) => void;
   setHostUnlocked: (unlocked: boolean) => void;
 
   // Round management
@@ -84,6 +86,7 @@ const useStore = create<AppStore>()(
       // Navigation
       currentPage: 'running',
       currentRound: ROUNDS[0],
+      liveRound: ROUNDS[0],
       hostUnlocked: false,
 
       // Rounds
@@ -112,6 +115,7 @@ const useStore = create<AppStore>()(
       // Actions
       setPage: (page) => set({ currentPage: page }),
       setRound: (round) => set({ currentRound: round, selectedCompetitorId: null }),
+      setLiveRound: (round) => set({ liveRound: round }),
       setHostUnlocked: (unlocked) => set({ hostUnlocked: unlocked }),
 
       toggleRunningSize: (size) => set((state) => {
@@ -182,6 +186,7 @@ const useStore = create<AppStore>()(
           delete courseTimeConfig[oldName];
         }
         const currentRound = state.currentRound === oldName ? trimmed : state.currentRound;
+        const liveRound = state.liveRound === oldName ? trimmed : state.liveRound;
 
         const roundAbbreviations = { ...state.roundAbbreviations };
         if (trimmed !== oldName) {
@@ -192,7 +197,7 @@ const useStore = create<AppStore>()(
           roundAbbreviations[oldName] = newAbbr;
         }
 
-        return { rounds, competitors, courseTimeConfig, currentRound, roundAbbreviations };
+        return { rounds, competitors, courseTimeConfig, currentRound, liveRound, roundAbbreviations };
       }),
 
       deleteRound: (name) => set((state) => {
@@ -203,7 +208,8 @@ const useStore = create<AppStore>()(
         const roundAbbreviations = { ...state.roundAbbreviations };
         delete roundAbbreviations[name];
         const currentRound = state.currentRound === name ? (rounds[0] ?? '') : state.currentRound;
-        return { rounds, courseTimeConfig, currentRound, roundAbbreviations };
+        const liveRound = state.liveRound === name ? (rounds[0] ?? '') : state.liveRound;
+        return { rounds, courseTimeConfig, currentRound, liveRound, roundAbbreviations };
       }),
 
       setRoundAbbr: (name, abbr) => set((state) => ({
@@ -319,6 +325,7 @@ const useStore = create<AppStore>()(
         courseTimeConfig: state.courseTimeConfig,
         rounds: state.rounds,
         roundAbbreviations: state.roundAbbreviations,
+        liveRound: state.liveRound,
       }),
     }
   )
@@ -332,6 +339,7 @@ if (state.competitors.length === 0) {
     competitors: mock.competitors,
     courseTimeConfig: mock.courseTimeConfig,
     currentRound: mock.currentRound,
+    liveRound: mock.currentRound,
     roundAbbreviations: mock.roundAbbreviations,
   });
 }

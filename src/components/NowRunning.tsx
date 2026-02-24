@@ -5,9 +5,11 @@ import SizeTag from './SizeTag.tsx';
 interface NowRunningProps {
   competitor: Competitor | undefined;
   upNext: Competitor[];
+  liveRound?: string;
+  isViewingLive?: boolean;
 }
 
-export default function NowRunning({ competitor, upNext }: NowRunningProps) {
+export default function NowRunning({ competitor, upNext, liveRound, isViewingLive = true }: NowRunningProps) {
   if (!competitor) return null;
 
   const hasUpNext = upNext.length > 0;
@@ -24,9 +26,16 @@ export default function NowRunning({ competitor, upNext }: NowRunningProps) {
           padding: '16px 20px',
         }}
       >
-        <div className="flex items-center gap-[7px] text-[10px] font-bold uppercase tracking-[1.5px]" style={{ color: '#ff6b2c' }}>
-          <div className="w-[7px] h-[7px] rounded-full animate-pulse" style={{ background: '#ff6b2c' }} />
-          NOW RUNNING
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-[7px] text-[10px] font-bold uppercase tracking-[1.5px]" style={{ color: '#ff6b2c' }}>
+            <div className="w-[7px] h-[7px] rounded-full animate-pulse" style={{ background: '#ff6b2c' }} />
+            NOW RUNNING
+          </div>
+          {!isViewingLive && liveRound && (
+            <div className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: '#555b73' }}>
+              {liveRound}
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <div className="font-display text-[20px]" style={{ color: '#f0f2f8' }}>

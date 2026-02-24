@@ -10,7 +10,7 @@ const SIZES_ORDER: Record<Size, number> = { S: 0, M: 1, I: 2, L: 3 };
 
 export default function RunningOrder() {
   const {
-    competitors, currentRound,
+    competitors, currentRound, liveRound, setLiveRound,
     hostUnlocked, reorderCompetitorsInGroup,
   } = useStore();
 
@@ -23,10 +23,14 @@ export default function RunningOrder() {
     .filter((c) => c.round === currentRound)
     .sort((a, b) => SIZES_ORDER[a.size] - SIZES_ORDER[b.size] || a.order - b.order);
 
-  // Queue always computed from all sizes (so NowRunning is accurate regardless of filter)
-  const queue = allData.filter((c) => c.totalFault === null && !c.eliminated);
-  const nowRunning = queue[0];
-  const upNext = queue.slice(1, 4);
+  // Live round queue — always derived from liveRound so banner persists across round changes
+  const isViewingLive = currentRound === liveRound;
+  const liveData = competitors
+    .filter((c) => c.round === liveRound)
+    .sort((a, b) => SIZES_ORDER[a.size] - SIZES_ORDER[b.size] || a.order - b.order);
+  const liveQueue = liveData.filter((c) => c.totalFault === null && !c.eliminated);
+  const nowRunning = liveQueue[0];
+  const upNext = liveQueue.slice(1, 4);
 
   // Displayed data respects the size view filter
   const displayData = viewSize === 'all' ? allData : allData.filter((c) => c.size === viewSize);
@@ -76,7 +80,7 @@ export default function RunningOrder() {
   return (
     <div>
       <CourseInfoBar />
-      <NowRunning competitor={nowRunning} upNext={upNext} />
+      <NowRunning competitor={nowRunning} upNext={upNext} liveRound={liveRound} isViewingLive={isViewingLive} />
 
       {/* Size view selector */}
       <div className="flex gap-2 mb-5 flex-wrap items-center">
@@ -108,18 +112,43 @@ export default function RunningOrder() {
       </div>
 
       <div style={{ background: '#14171e', borderRadius: '12px', border: '1px solid #2a2f40', overflow: 'hidden' }}>
-        <div className="flex justify-between items-center" style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
+        <div className="flex justify-between items-center flex-wrap gap-2" style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
           <div className="font-display text-[15px] flex items-center gap-2.5" style={{ color: '#f0f2f8' }}>
             🐕 Running Order
             <span className="font-mono text-[11px] px-2.5 py-0.5 rounded-[6px]" style={{ background: '#1c2030', color: '#555b73' }}>
               {displayData.length}
             </span>
+            {isViewingLive && (
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-[6px] flex items-center gap-1.5" style={{ background: 'rgba(255,107,44,0.15)', color: '#ff6b2c' }}>
+                <span className="w-[6px] h-[6px] rounded-full animate-pulse" style={{ background: 'currentColor' }} />
+                LIVE
+              </span>
+            )}
           </div>
-          {hostUnlocked && (
-            <span className="text-[11px]" style={{ color: '#555b73' }}>
-              ⠿ Drag to reorder · 🔀 Randomize per size group
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {hostUnlocked && !isViewingLive && (
+              <button
+                onClick={() => setLiveRound(currentRound)}
+                className="cursor-pointer text-[12px] font-bold transition-all duration-150"
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,107,44,0.4)',
+                  background: 'rgba(255,107,44,0.08)',
+                  color: '#ff6b2c',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,107,44,0.18)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,107,44,0.08)')}
+              >
+                ▶ Set as Live
+              </button>
+            )}
+            {hostUnlocked && (
+              <span className="text-[11px]" style={{ color: '#555b73' }}>
+                ⠿ Drag · 🔀 Randomize
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -194,7 +223,7 @@ export default function RunningOrder() {
 
                     {/* Competitor rows */}
                     {group.map((c) => {
-                      const isRunning = nowRunning?.id === c.id;
+                      const isRunning = isViewingLive && nowRunning?.id === c.id;
                       const isDone = c.totalFault !== null && !c.eliminated;
                       const isEliminated = c.eliminated;
                       const isDragging = draggedId === c.id;
