@@ -71,7 +71,7 @@ export default function RunningOrder() {
     reorderCompetitorsInGroup(currentRound, size, ids);
   };
 
-  const totalCols = hostUnlocked ? 7 : 6;
+  const totalCols = hostUnlocked ? 6 : 5;
 
   return (
     <div>
@@ -127,10 +127,10 @@ export default function RunningOrder() {
           <thead>
             <tr>
               {hostUnlocked && <th style={{ width: '32px', padding: '10px 6px 10px 14px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid #2a2f40' }} />}
-              {['#', 'Size', 'Dog', 'Breed', 'Handler', 'Status'].map((h) => (
+              {['#', 'Dog', 'Breed', 'Handler', 'Status'].map((h) => (
                 <th
                   key={h}
-                  className={`text-left text-[10px] font-bold uppercase tracking-[1px] whitespace-nowrap${h === 'Breed' ? ' hidden sm:table-cell' : ''}`}
+                  className="text-left text-[10px] font-bold uppercase tracking-[1px] whitespace-nowrap"
                   style={{ padding: '10px 14px', color: '#555b73', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid #2a2f40' }}
                 >
                   {h}
@@ -254,13 +254,10 @@ export default function RunningOrder() {
                           <td className="text-[13px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)' }}>
                             <span className="font-mono font-bold text-[14px]" style={{ color: '#ff6b2c' }}>{c.order}</span>
                           </td>
-                          <td style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)' }}>
-                            <SizeTag size={c.size} />
-                          </td>
                           <td className="text-[13px] font-bold" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#f0f2f8' }}>
                             {c.icon || dogEmoji(c.dog)} {c.dog}
                           </td>
-                          <td className="text-[12px] hidden sm:table-cell" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
+                          <td className="text-[12px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
                             {c.breed || '—'}
                           </td>
                           <td className="text-[13px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
