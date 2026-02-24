@@ -116,14 +116,21 @@ export default function SyncPanel() {
       </button>
 
       {open && (
+        <>
+          {/* Mobile backdrop */}
+          <div
+            className="fixed inset-0 z-[290] sm:hidden"
+            style={{ background: 'rgba(0,0,0,0.6)' }}
+            onClick={() => setOpen(false)}
+          />
         <div
-          className="absolute top-[calc(100%+8px)] right-0 z-[300]"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[300] sm:absolute sm:translate-x-0 sm:translate-y-0 sm:top-[calc(100%+8px)] sm:right-0 sm:left-auto"
           style={{
             background: '#14171e',
             border: '1px solid #2a2f40',
             borderRadius: '12px',
             padding: '16px',
-            width: '260px',
+            width: 'min(260px, 90vw)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
           }}
         >
@@ -272,6 +279,7 @@ export default function SyncPanel() {
             </div>
           )}
         </div>
+        </>
       )}
     </div>
   );
