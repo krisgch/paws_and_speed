@@ -38,9 +38,13 @@ export default function ScoringQueue() {
             <div>
               <div className="font-bold text-[13px]" style={{ color: '#f0f2f8' }}>
                 {c.icon || dogEmoji(c.dog)} {c.dog}
-                {c.eliminated && (
+                {c.eliminated ? (
                   <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
                     ELIM
+                  </span>
+                ) : c.totalFault !== null && (
+                  <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(45,212,160,0.15)', color: '#2dd4a0' }}>
+                    ✓
                   </span>
                 )}
               </div>
