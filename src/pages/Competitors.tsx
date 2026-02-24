@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore.ts';
 import { HOST_PIN, dogEmoji, AGILITY_BREEDS } from '../constants/index.ts';
 import type { Size } from '../types/index.ts';
 import SizeTag from '../components/SizeTag.tsx';
+import { parseCSVText, fetchSheetCSV } from '../utils/importCSV.ts';
+import type { ParsedRow } from '../utils/importCSV.ts';
 
 interface DogRow {
   key: string;
@@ -76,6 +78,16 @@ export default function Competitors() {
   // Sort
   const [sortBy, setSortBy] = useState<'dog' | 'breed' | 'size' | 'human'>('size');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // Import panel
+  const [importOpen, setImportOpen] = useState(false);
+  const [importTab, setImportTab] = useState<'file' | 'sheets'>('file');
+  const [sheetsUrl, setSheetsUrl] = useState('');
+  const [importPreview, setImportPreview] = useState<ParsedRow[] | null>(null);
+  const [importSkipped, setImportSkipped] = useState<{ raw: string[]; reason: string }[]>([]);
+  const [importFetching, setImportFetching] = useState(false);
+  const [importError, setImportError] = useState('');
+  const csvFileRef = useRef<HTMLInputElement>(null);
 
   // Emoji picker
   const [emojiPickerKey, setEmojiPickerKey] = useState<string | null>(null);
@@ -267,6 +279,75 @@ export default function Competitors() {
     setEmojiPickerKey(null);
   };
 
+  // ---- Import helpers ----
+  const applyImportPreview = (result: ReturnType<typeof parseCSVText>) => {
+    setImportPreview(result.valid);
+    setImportSkipped(result.skipped);
+    setImportError(result.valid.length === 0 && result.skipped.length === 0
+      ? 'No rows found. Check the file has a header row and data rows.'
+      : '');
+  };
+
+  const handleCSVFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError('');
+    setImportPreview(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      applyImportPreview(parseCSVText(text));
+    };
+    reader.readAsText(file);
+  };
+
+  const handleFetchSheet = async () => {
+    if (!sheetsUrl.trim()) return;
+    setImportFetching(true);
+    setImportError('');
+    setImportPreview(null);
+    try {
+      const text = await fetchSheetCSV(sheetsUrl.trim());
+      applyImportPreview(parseCSVText(text));
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to fetch sheet.');
+    } finally {
+      setImportFetching(false);
+    }
+  };
+
+  const handleConfirmImport = () => {
+    if (!importPreview) return;
+    const existing = new Set(
+      [...Array.from(dogMap.values()), ...pendingDogs].map((d) => `${d.dog}|${d.human}`)
+    );
+    let added = 0;
+    const newPending: DogRow[] = [];
+    for (const row of importPreview) {
+      const key = `${row.dog}|${row.human}`;
+      if (existing.has(key)) continue;
+      existing.add(key);
+      newPending.push({ key, dog: row.dog, breed: row.breed, size: row.size, human: row.human });
+      added++;
+    }
+    setPendingDogs((prev) => [...prev, ...newPending]);
+    const dupes = importPreview.length - added;
+    showToast(`Imported ${added} dog${added !== 1 ? 's' : ''}${dupes ? ` (${dupes} duplicate${dupes !== 1 ? 's' : ''} skipped)` : ''}`);
+    setImportPreview(null);
+    setImportSkipped([]);
+    setSheetsUrl('');
+    if (csvFileRef.current) csvFileRef.current.value = '';
+    setImportOpen(false);
+  };
+
+  const resetImport = () => {
+    setImportPreview(null);
+    setImportSkipped([]);
+    setImportError('');
+    setSheetsUrl('');
+    if (csvFileRef.current) csvFileRef.current.value = '';
+  };
+
   const totalColumns = 4 + rounds.length + 1;
 
   return (
@@ -418,6 +499,178 @@ export default function Competitors() {
             <p className="text-[11px] mt-2" style={{ color: '#555b73' }}>
               Click a round name or abbreviation to edit it. Rounds with competitors cannot be deleted.
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Import panel */}
+      <div style={{ background: '#14171e', border: '1px solid #2a2f40', borderRadius: '12px', marginBottom: '16px', overflow: 'hidden' }}>
+        <div
+          className="flex items-center justify-between cursor-pointer select-none"
+          style={{ padding: '12px 18px', borderBottom: importOpen ? '1px solid #2a2f40' : 'none' }}
+          onClick={() => { setImportOpen(!importOpen); resetImport(); }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#1a1e28')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <span className="text-[13px] font-bold flex items-center gap-2" style={{ color: '#f0f2f8' }}>
+            📂 Import Competitors
+          </span>
+          <span className="text-[10px]" style={{ color: '#555b73' }}>{importOpen ? '▲' : '▼'}</span>
+        </div>
+
+        {importOpen && (
+          <div style={{ padding: '16px 18px' }}>
+            {/* Tabs */}
+            <div className="flex gap-1 mb-4" style={{ background: '#1c2030', borderRadius: '8px', padding: '4px', width: 'fit-content' }}>
+              {(['file', 'sheets'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => { setImportTab(tab); resetImport(); }}
+                  className="cursor-pointer text-[12px] font-bold transition-all duration-150"
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: importTab === tab ? '#ff6b2c' : 'transparent',
+                    color: importTab === tab ? '#fff' : '#8b90a5',
+                  }}
+                >
+                  {tab === 'file' ? '📄 CSV File' : '🔗 Google Sheets'}
+                </button>
+              ))}
+            </div>
+
+            {/* File input */}
+            {importTab === 'file' && (
+              <div>
+                <p className="text-[11px] mb-3" style={{ color: '#8b90a5' }}>
+                  Upload a <strong style={{ color: '#f0f2f8' }}>.csv</strong> file with columns:{' '}
+                  <span style={{ color: '#ff6b2c', fontFamily: 'monospace' }}>Dog, Breed, Size, Handler</span>
+                  {' '}(header row required, Breed optional, Size = S/M/I/L).
+                </p>
+                <input
+                  ref={csvFileRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleCSVFile}
+                  className="w-full text-[12px]"
+                  style={{ color: '#8b90a5' }}
+                />
+              </div>
+            )}
+
+            {/* Google Sheets input */}
+            {importTab === 'sheets' && (
+              <div>
+                <p className="text-[11px] mb-3" style={{ color: '#8b90a5' }}>
+                  Paste a <strong style={{ color: '#f0f2f8' }}>public Google Sheets URL</strong>. The sheet must be shared as
+                  {' '}<em>"Anyone with the link can view"</em> and have columns:{' '}
+                  <span style={{ color: '#ff6b2c', fontFamily: 'monospace' }}>Dog, Breed, Size, Handler</span>.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    value={sheetsUrl}
+                    onChange={(e) => { setSheetsUrl(e.target.value); setImportPreview(null); setImportError(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleFetchSheet(); }}
+                    placeholder="https://docs.google.com/spreadsheets/d/…"
+                    className="flex-1 outline-none text-[12px]"
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '2px solid #2a2f40', background: '#1c2030', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}
+                  />
+                  <button
+                    onClick={handleFetchSheet}
+                    disabled={importFetching || !sheetsUrl.trim()}
+                    className="cursor-pointer text-[12px] font-bold disabled:opacity-40"
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#ff6b2c', color: '#fff', whiteSpace: 'nowrap' }}
+                  >
+                    {importFetching ? 'Fetching…' : 'Fetch →'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {importError && (
+              <div className="text-[12px] font-semibold mt-3" style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+                {importError}
+              </div>
+            )}
+
+            {/* Preview */}
+            {importPreview !== null && (
+              <div className="mt-4">
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                  <span className="text-[12px] font-bold" style={{ color: '#2dd4a0' }}>
+                    ✓ {importPreview.length} valid row{importPreview.length !== 1 ? 's' : ''}
+                  </span>
+                  {importSkipped.length > 0 && (
+                    <span className="text-[12px] font-semibold" style={{ color: '#fbbf24' }}>
+                      ⚠ {importSkipped.length} skipped
+                    </span>
+                  )}
+                </div>
+
+                {importPreview.length > 0 && (
+                  <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid #2a2f40', marginBottom: '12px' }}>
+                    <table className="w-full border-collapse" style={{ minWidth: '400px' }}>
+                      <thead>
+                        <tr>
+                          {['Dog', 'Breed', 'Size', 'Handler'].map((h) => (
+                            <th key={h} className="text-left text-[10px] font-bold uppercase tracking-[1px]" style={{ padding: '8px 12px', color: '#555b73', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid #2a2f40' }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreview.slice(0, 10).map((row, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(42,47,64,0.4)' }}>
+                            <td className="text-[12px] font-semibold" style={{ padding: '8px 12px', color: '#f0f2f8' }}>{dogEmoji(row.dog)} {row.dog}</td>
+                            <td className="text-[11px]" style={{ padding: '8px 12px', color: '#8b90a5' }}>{row.breed}</td>
+                            <td style={{ padding: '8px 12px' }}><SizeTag size={row.size} /></td>
+                            <td className="text-[12px]" style={{ padding: '8px 12px', color: '#8b90a5' }}>{row.human}</td>
+                          </tr>
+                        ))}
+                        {importPreview.length > 10 && (
+                          <tr>
+                            <td colSpan={4} className="text-center text-[11px]" style={{ padding: '8px', color: '#555b73' }}>
+                              …and {importPreview.length - 10} more
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {importSkipped.length > 0 && (
+                  <div className="text-[11px] mb-3" style={{ color: '#555b73' }}>
+                    <strong style={{ color: '#fbbf24' }}>Skipped rows:</strong>{' '}
+                    {importSkipped.slice(0, 3).map((s, i) => (
+                      <span key={i}>"{s.raw.join(', ')}" ({s.reason}){i < Math.min(importSkipped.length, 3) - 1 ? '; ' : ''}</span>
+                    ))}
+                    {importSkipped.length > 3 && ` …and ${importSkipped.length - 3} more.`}
+                  </div>
+                )}
+
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={resetImport}
+                    className="cursor-pointer text-[12px] font-bold"
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #2a2f40', background: 'transparent', color: '#8b90a5' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmImport}
+                    disabled={importPreview.length === 0}
+                    className="cursor-pointer text-[12px] font-bold disabled:opacity-40"
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#ff6b2c', color: '#fff' }}
+                  >
+                    ➕ Import {importPreview.length} Dog{importPreview.length !== 1 ? 's' : ''}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
