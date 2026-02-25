@@ -19,7 +19,7 @@ export default function Scoring() {
       />
       <CourseInfoBar />
 
-      <div className="grid gap-5 max-[900px]:grid-cols-1" style={{ gridTemplateColumns: '320px 1fr' }}>
+      <div className="grid gap-5 grid-cols-1 md:grid-cols-[320px_1fr]">
         <ScoringQueue />
         <ScoringForm />
       </div>

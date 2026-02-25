@@ -675,10 +675,82 @@ export default function Competitors() {
         )}
       </div>
 
+      {/* Add Dog */}
+      <div style={{ background: '#14171e', border: '1px solid #2a2f40', borderRadius: '12px', marginBottom: '16px', overflow: 'hidden' }}>
+        <div className="text-[13px] font-bold flex items-center gap-2" style={{ padding: '12px 18px', borderBottom: '1px solid #2a2f40', color: '#f0f2f8' }}>
+          ➕ Add Dog
+        </div>
+        <div style={{ padding: '14px 18px' }}>
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={(e) => {
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setEmojiPickerPos({ x: rect.left, y: rect.bottom + 6 });
+                  setEmojiPickerKey('__new__');
+                  setCustomEmojiInput('');
+                }}
+                title="Pick emoji"
+                className="cursor-pointer transition-all duration-150 shrink-0"
+                style={{ fontSize: '18px', background: 'rgba(255,107,44,0.06)', border: '1px dashed rgba(255,107,44,0.3)', padding: '5px 7px', borderRadius: '6px', lineHeight: 1 }}
+              >
+                {newIcon || '🐶'}
+              </button>
+              <input
+                style={{ ...inputStyle, width: '120px' }}
+                value={newDog}
+                onChange={(e) => setNewDog(e.target.value)}
+                placeholder="Dog name"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddDog(); }}
+              />
+            </div>
+            <input
+              style={{ ...inputStyle, width: '120px' }}
+              value={newBreed}
+              onChange={(e) => setNewBreed(e.target.value)}
+              placeholder="Breed (optional)"
+              list="agility-breeds"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddDog(); }}
+            />
+            <select
+              style={{ ...inputStyle, width: '65px' }}
+              value={newSize}
+              onChange={(e) => setNewSize(e.target.value as Size)}
+            >
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="I">I</option>
+              <option value="L">L</option>
+            </select>
+            <input
+              style={{ ...inputStyle, flex: 1, minWidth: '120px' }}
+              value={newHuman}
+              onChange={(e) => setNewHuman(e.target.value)}
+              placeholder="Handler"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddDog(); }}
+            />
+            <button
+              onClick={handleAddDog}
+              className="cursor-pointer text-[12px] font-bold shrink-0"
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: '1px solid rgba(45,212,160,0.3)',
+                background: 'rgba(45,212,160,0.1)',
+                color: '#2dd4a0',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              ➕ Add Dog
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Grid */}
       <div style={{ background: '#14171e', border: '1px solid #2a2f40', borderRadius: '12px', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table className="w-full border-collapse" style={{ minWidth: '860px' }}>
+          <table className="w-full border-collapse" style={{ minWidth: `${460 + rounds.length * 48}px` }}>
             <thead>
               <tr>
                 {(['dog', 'breed', 'size', 'human'] as const).map((col) => (
@@ -707,80 +779,6 @@ export default function Competitors() {
               </tr>
             </thead>
             <tbody>
-              {/* Add dog form row — always at top */}
-              <tr style={{ borderBottom: '1px solid #2a2f40', background: 'rgba(255,107,44,0.03)' }}>
-                <td style={{ padding: '10px 14px' }}>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setEmojiPickerPos({ x: rect.left, y: rect.bottom + 6 });
-                        setEmojiPickerKey('__new__');
-                        setCustomEmojiInput('');
-                      }}
-                      title="Pick emoji"
-                      className="cursor-pointer transition-all duration-150 shrink-0"
-                      style={{ fontSize: '18px', background: 'rgba(255,107,44,0.06)', border: '1px dashed rgba(255,107,44,0.3)', padding: '2px 5px', borderRadius: '6px', lineHeight: 1 }}
-                    >
-                      {newIcon || '🐶'}
-                    </button>
-                    <input
-                      style={{ ...inputStyle, width: '90px' }}
-                      value={newDog}
-                      onChange={(e) => setNewDog(e.target.value)}
-                      placeholder="Dog name"
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddDog(); }}
-                    />
-                  </div>
-                </td>
-                <td style={{ padding: '10px 14px' }}>
-                  <input
-                    style={{ ...inputStyle, width: '110px' }}
-                    value={newBreed}
-                    onChange={(e) => setNewBreed(e.target.value)}
-                    placeholder="Breed"
-                    list="agility-breeds"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddDog(); }}
-                  />
-                </td>
-                <td style={{ padding: '10px 14px' }}>
-                  <select
-                    style={{ ...inputStyle, width: '58px' }}
-                    value={newSize}
-                    onChange={(e) => setNewSize(e.target.value as Size)}
-                  >
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="I">I</option>
-                    <option value="L">L</option>
-                  </select>
-                </td>
-                <td style={{ padding: '10px 14px' }}>
-                  <input
-                    style={{ ...inputStyle, width: '130px' }}
-                    value={newHuman}
-                    onChange={(e) => setNewHuman(e.target.value)}
-                    placeholder="Handler"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddDog(); }}
-                  />
-                </td>
-                <td colSpan={rounds.length + 1} style={{ padding: '10px 14px' }}>
-                  <button
-                    onClick={handleAddDog}
-                    className="cursor-pointer text-[12px] font-bold"
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(45,212,160,0.3)',
-                      background: 'rgba(45,212,160,0.1)',
-                      color: '#2dd4a0',
-                    }}
-                  >
-                    ➕ Add Dog
-                  </button>
-                </td>
-              </tr>
-
               {allDogRows.length === 0 ? (
                 <tr>
                   <td
