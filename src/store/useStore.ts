@@ -342,6 +342,20 @@ if (state.competitors.length === 0) {
     liveRound: mock.currentRound,
     roundAbbreviations: mock.roundAbbreviations,
   });
+} else {
+  // currentRound is not persisted — pick the best default from real data.
+  // Priority 1: liveRound if it still has unscored competitors (someone is running).
+  // Priority 2: first round (in rounds order) that has any competitor.
+  const { competitors, rounds, liveRound } = state;
+  const liveHasRunners = competitors.some(
+    (c) => c.round === liveRound && c.totalFault === null && !c.eliminated
+  );
+  if (liveHasRunners) {
+    useStore.setState({ currentRound: liveRound });
+  } else {
+    const firstPopulated = rounds.find((r) => competitors.some((c) => c.round === r));
+    if (firstPopulated) useStore.setState({ currentRound: firstPopulated });
+  }
 }
 
 export default useStore;
