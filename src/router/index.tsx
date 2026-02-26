@@ -28,6 +28,7 @@ import RankingsPage from '../pages/host/RankingsPage.tsx';
 
 // Competitors page (existing)
 import Competitors from '../pages/Competitors.tsx';
+import Profile from '../pages/Profile.tsx';
 
 export const router = createBrowserRouter([
   // ── Public routes ──────────────────────────────────────────────────────────
@@ -48,8 +49,14 @@ export const router = createBrowserRouter([
   {
     element: <AuthRoute />,
     children: [
-      { path: '/dashboard', element: <CompetitorDashboard /> },
-      { path: '/events/:eventId/register', element: <RegisterFlow /> },
+      {
+        element: <AppShell />,
+        children: [
+          { path: '/dashboard', element: <CompetitorDashboard /> },
+          { path: '/profile', element: <Profile /> },
+          { path: '/events/:eventId/register', element: <RegisterFlow /> },
+        ],
+      },
     ],
   },
 
@@ -57,16 +64,15 @@ export const router = createBrowserRouter([
   {
     element: <HostRoute />,
     children: [
-      { path: '/host', element: <HostDashboard /> },
-      { path: '/host/events/new', element: <CreateEvent /> },
-      { path: '/host/events/:eventId', element: <EventHub /> },
-      { path: '/host/events/:eventId/rounds', element: <ManageRounds /> },
-      { path: '/host/events/:eventId/pricing', element: <ManagePricing /> },
-      { path: '/host/events/:eventId/registrations', element: <RegistrationQueue /> },
-      // AppShell wraps the scoring/running-order/rankings pages (has Header with tabs)
       {
         element: <AppShell />,
         children: [
+          { path: '/host', element: <HostDashboard /> },
+          { path: '/host/events/new', element: <CreateEvent /> },
+          { path: '/host/events/:eventId', element: <EventHub /> },
+          { path: '/host/events/:eventId/rounds', element: <ManageRounds /> },
+          { path: '/host/events/:eventId/pricing', element: <ManagePricing /> },
+          { path: '/host/events/:eventId/registrations', element: <RegistrationQueue /> },
           { path: '/host/events/:eventId/running-order', element: <RunningOrderPage /> },
           { path: '/host/events/:eventId/scoring', element: <ScoringPage /> },
           { path: '/host/events/:eventId/rankings', element: <RankingsPage /> },

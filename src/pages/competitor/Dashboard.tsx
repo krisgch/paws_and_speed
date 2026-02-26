@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore.ts';
 import { getDogs, addDog, deleteDog, getMyRegistrations } from '../../lib/db.ts';
-import { signOut } from '../../lib/auth.ts';
 import type { Dog, Registration } from '../../types/supabase.ts';
 import { AGILITY_BREEDS, SIZES } from '../../constants/index.ts';
 
@@ -23,7 +22,7 @@ const REG_STATUS_COLORS: Record<string, string> = {
 };
 
 export default function CompetitorDashboard() {
-  const { user, profile, setUser, setProfile } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +34,12 @@ export default function CompetitorDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    const timeout = setTimeout(() => setLoading(false), 1500);
     Promise.all([getDogs(user.id), getMyRegistrations(user.id)])
       .then(([d, r]) => { setDogs(d); setRegistrations(r); })
-      .finally(() => setLoading(false));
+      .catch(() => {})
+      .finally(() => { clearTimeout(timeout); setLoading(false); });
+    return () => clearTimeout(timeout);
   }, [user]);
 
   const handleAddDog = async (e: React.FormEvent) => {
@@ -50,6 +52,8 @@ export default function CompetitorDashboard() {
       setAddingDog(false);
       setNewName('');
       setNewBreed('');
+    } catch (err) {
+      alert('Could not save: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setSaving(false);
     }
@@ -61,31 +65,8 @@ export default function CompetitorDashboard() {
     setDogs((prev) => prev.filter((d) => d.id !== id));
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    setUser(null);
-    setProfile(null);
-  };
-
   return (
-    <div className="min-h-screen" style={{ background: '#0c0e12', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Header */}
-      <header style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
-        <div className="max-w-[760px] mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 no-underline">
-            <div className="w-7 h-7 flex items-center justify-center text-[14px] -rotate-6" style={{ background: '#ff6b2c', borderRadius: '8px' }}>🐾</div>
-            <span className="font-display text-[16px]" style={{ color: '#f0f2f8' }}>Paws<span style={{ color: '#ff6b2c' }}>&</span>Speed</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-[12px]" style={{ color: '#8b90a5' }}>{profile?.display_name}</span>
-            <button onClick={handleSignOut} className="text-[12px] cursor-pointer" style={{ background: 'none', border: 'none', color: '#555b73' }}>
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[760px] mx-auto px-5 py-8">
+    <main className="max-w-[760px] mx-auto px-5 py-8">
         <h1 className="font-display text-[26px] mb-8" style={{ color: '#f0f2f8' }}>My Dashboard</h1>
 
         {loading ? (
@@ -194,8 +175,7 @@ export default function CompetitorDashboard() {
             </section>
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }
 

@@ -2,7 +2,7 @@ import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import useStore from '../store/useStore.ts';
 import useAuthStore from '../store/useAuthStore.ts';
 import RoundDropdown from './RoundDropdown.tsx';
-import { signOut } from '../lib/auth.ts';
+import UserMenu from './UserMenu.tsx';
 
 type EventTab = { path: string; label: string; icon: string };
 
@@ -19,18 +19,11 @@ export default function Header() {
   const params = useParams<{ eventId: string }>();
   const eventId = params.eventId;
 
-  const { user, profile, setUser, setProfile } = useAuthStore();
+  const { user, profile } = useAuthStore();
   // Keep useStore for the existing round dropdown & competitor data
   const { hostUnlocked } = useStore();
 
   const isActive = (tabPath: string) => location.pathname.endsWith(tabPath);
-
-  const handleSignOut = async () => {
-    await signOut();
-    setUser(null);
-    setProfile(null);
-    navigate('/');
-  };
 
   // Determine which tabs to show: host sees all, competitor sees order + rankings
   const visibleTabs = EVENT_TABS.filter((tab) => {
@@ -52,7 +45,7 @@ export default function Header() {
     >
       <div className="max-w-[1440px] mx-auto flex items-center justify-between h-16 gap-4 max-[900px]:flex-wrap max-[900px]:h-auto max-[900px]:py-3 max-[900px]:gap-2">
         {/* Logo */}
-        <Link to={user ? (profile?.role === 'host' ? '/host' : '/dashboard') : '/'} className="flex items-center gap-3 shrink-0 no-underline">
+        <Link to="/" className="flex items-center gap-3 shrink-0 no-underline">
           <div
             className="w-9 h-9 flex items-center justify-center text-[18px] -rotate-6"
             style={{ background: '#ff6b2c', borderRadius: '10px' }}
@@ -101,47 +94,27 @@ export default function Header() {
         {/* Right section */}
         <div className="flex items-center gap-3 shrink-0">
           {eventId && <RoundDropdown />}
-
           {user ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] hidden sm:inline" style={{ color: '#8b90a5' }}>
-                {profile?.display_name}
-              </span>
-              {profile?.role === 'host' && (
-                <span
-                  className="text-[9px] font-bold uppercase tracking-[0.5px]"
-                  style={{ background: 'rgba(45,212,160,0.12)', color: '#2dd4a0', padding: '2px 6px', borderRadius: '4px' }}
-                >
-                  Host
-                </span>
-              )}
-              <button
-                onClick={handleSignOut}
-                className="cursor-pointer text-[11px] font-bold"
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: '20px',
-                  border: 'none',
-                  background: 'rgba(85,91,115,0.2)',
-                  color: '#555b73',
-                }}
-              >
-                Sign out
-              </button>
-            </div>
+            <UserMenu />
           ) : (
-            <Link
-              to="/login"
-              className="no-underline text-[12px] font-bold"
-              style={{
-                padding: '5px 14px',
-                borderRadius: '20px',
-                background: '#ff6b2c',
-                color: '#fff',
-              }}
-            >
-              Sign In
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="text-[13px] font-semibold no-underline transition-all duration-150"
+                style={{ padding: '6px 14px', borderRadius: '8px', color: '#c8ccdc', border: '1px solid #2a2f40', background: '#1c2030' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#ff6b2c'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#2a2f40'; (e.currentTarget as HTMLElement).style.color = '#c8ccdc'; }}
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                className="text-[13px] font-bold no-underline"
+                style={{ padding: '6px 16px', borderRadius: '8px', background: '#ff6b2c', color: '#fff' }}
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
       </div>

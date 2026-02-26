@@ -1,52 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore.ts';
 import { getHostEvents } from '../../lib/db.ts';
-import { signOut } from '../../lib/auth.ts';
 import EventCard from '../../components/EventCard.tsx';
 import type { Event } from '../../types/supabase.ts';
 
 export default function HostDashboard() {
-  const { user, profile, setUser, setProfile } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
+    const timeout = setTimeout(() => setLoading(false), 1500);
     getHostEvents(user.id)
       .then(setEvents)
-      .finally(() => setLoading(false));
+      .catch(() => {})
+      .finally(() => { clearTimeout(timeout); setLoading(false); });
+    return () => clearTimeout(timeout);
   }, [user]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    setUser(null);
-    setProfile(null);
-    navigate('/');
-  };
-
   return (
-    <div className="min-h-screen" style={{ background: '#0c0e12', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <header style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
-        <div className="max-w-[760px] mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 no-underline">
-            <div className="w-7 h-7 flex items-center justify-center text-[14px] -rotate-6" style={{ background: '#ff6b2c', borderRadius: '8px' }}>🐾</div>
-            <span className="font-display text-[16px]" style={{ color: '#f0f2f8' }}>Paws<span style={{ color: '#ff6b2c' }}>&</span>Speed</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-[11px] font-bold uppercase tracking-[0.5px]" style={{ color: '#2dd4a0', background: 'rgba(45,212,160,0.1)', padding: '2px 8px', borderRadius: '4px' }}>
-              Host
-            </span>
-            <span className="text-[12px]" style={{ color: '#8b90a5' }}>{profile?.display_name}</span>
-            <button onClick={handleSignOut} className="text-[12px] cursor-pointer" style={{ background: 'none', border: 'none', color: '#555b73' }}>
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[760px] mx-auto px-5 py-8">
+    <main className="max-w-[760px] mx-auto px-5 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="font-display text-[26px]" style={{ color: '#f0f2f8' }}>My Events</h1>
           <Link
@@ -76,7 +51,6 @@ export default function HostDashboard() {
             {events.map((ev) => <EventCard key={ev.id} event={ev} hostView />)}
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }

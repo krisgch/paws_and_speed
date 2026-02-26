@@ -23,8 +23,17 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "profiles: own row read"   ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "profiles: own row update" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- SECURITY DEFINER bypasses RLS so this doesn't recurse into itself
+CREATE OR REPLACE FUNCTION public.is_host_or_admin()
+RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('host', 'super_admin')
+  )
+$$;
+
 CREATE POLICY "profiles: hosts read all" ON public.profiles FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('host', 'super_admin'))
+  public.is_host_or_admin()
 );
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
