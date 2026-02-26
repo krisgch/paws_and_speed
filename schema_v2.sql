@@ -4,9 +4,21 @@
 
 -- ─── Enums ────────────────────────────────────────────────────────────────────
 
-CREATE TYPE public.user_role AS ENUM ('competitor', 'host', 'super_admin');
-CREATE TYPE public.event_status AS ENUM ('draft', 'registration_open', 'registration_closed', 'live', 'completed');
-CREATE TYPE public.registration_status AS ENUM ('pending_payment', 'pending_review', 'approved', 'rejected');
+DO $$ BEGIN
+  CREATE TYPE public.user_role AS ENUM ('competitor', 'host', 'super_admin');
+EXCEPTION WHEN duplicate_object THEN
+  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'super_admin';
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.event_status AS ENUM ('draft', 'registration_open', 'registration_closed', 'live', 'completed');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.registration_status AS ENUM ('pending_payment', 'pending_review', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── Helper: is_super_admin() ─────────────────────────────────────────────────
 -- Used in RLS policies. SECURITY DEFINER bypasses RLS on profiles table.
@@ -21,7 +33,7 @@ $$;
 -- ─── profiles ─────────────────────────────────────────────────────────────────
 -- One row per auth user, created automatically via trigger.
 
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id            UUID        PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   role          user_role   NOT NULL DEFAULT 'competitor',
   display_name  TEXT        NOT NULL DEFAULT '',
@@ -58,6 +70,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
@@ -65,7 +78,7 @@ CREATE TRIGGER on_auth_user_created
 -- ─── host_invites ─────────────────────────────────────────────────────────────
 -- Admin inserts codes; used once at signup to grant host role.
 
-CREATE TABLE public.host_invites (
+CREATE TABLE IF NOT EXISTS public.host_invites (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   code       TEXT        NOT NULL UNIQUE,
   used_by    UUID        REFERENCES auth.users,
@@ -108,7 +121,7 @@ $$;
 
 -- ─── dogs ─────────────────────────────────────────────────────────────────────
 
-CREATE TABLE public.dogs (
+CREATE TABLE IF NOT EXISTS public.dogs (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id   UUID        NOT NULL REFERENCES auth.users ON DELETE CASCADE,
   name       TEXT        NOT NULL,
@@ -130,7 +143,7 @@ CREATE POLICY "dogs: hosts read all" ON public.dogs
 
 -- ─── events ───────────────────────────────────────────────────────────────────
 
-CREATE TABLE public.events (
+CREATE TABLE IF NOT EXISTS public.events (
   id             UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   host_id        UUID          NOT NULL REFERENCES auth.users,
   name           TEXT          NOT NULL,
@@ -155,7 +168,7 @@ CREATE POLICY "events: public read non-draft" ON public.events
 
 -- ─── event_rounds ─────────────────────────────────────────────────────────────
 
-CREATE TABLE public.event_rounds (
+CREATE TABLE IF NOT EXISTS public.event_rounds (
   id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id     UUID        NOT NULL REFERENCES public.events ON DELETE CASCADE,
   name         TEXT        NOT NULL,
@@ -183,7 +196,7 @@ CREATE POLICY "event_rounds: public read" ON public.event_rounds
 
 -- ─── registrations ────────────────────────────────────────────────────────────
 
-CREATE TABLE public.registrations (
+CREATE TABLE IF NOT EXISTS public.registrations (
   id                   UUID                  PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id             UUID                  NOT NULL REFERENCES public.events ON DELETE CASCADE,
   competitor_id        UUID                  NOT NULL REFERENCES auth.users,
@@ -222,7 +235,7 @@ CREATE POLICY "registrations: host manage" ON public.registrations
 -- ─── event_competitors ────────────────────────────────────────────────────────
 -- Running order + scores per round. Source of truth for scoring UI.
 
-CREATE TABLE public.event_competitors (
+CREATE TABLE IF NOT EXISTS public.event_competitors (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id         UUID        NOT NULL REFERENCES public.events ON DELETE CASCADE,
   round_id         UUID        NOT NULL REFERENCES public.event_rounds ON DELETE CASCADE,
@@ -260,12 +273,15 @@ CREATE POLICY "event_competitors: public read" ON public.event_competitors
   );
 
 -- Enable Realtime for live score updates
-ALTER PUBLICATION supabase_realtime ADD TABLE public.event_competitors;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.event_competitors;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── event_live_state ─────────────────────────────────────────────────────────
 -- Tracks which round is currently live (one row per event).
 
-CREATE TABLE public.event_live_state (
+CREATE TABLE IF NOT EXISTS public.event_live_state (
   event_id       UUID        PRIMARY KEY REFERENCES public.events ON DELETE CASCADE,
   live_round_id  UUID        REFERENCES public.event_rounds ON DELETE SET NULL,
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -282,7 +298,10 @@ CREATE POLICY "event_live_state: host write" ON public.event_live_state
 CREATE POLICY "event_live_state: public read" ON public.event_live_state
   FOR SELECT USING (true);
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.event_live_state;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.event_live_state;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── Trigger: auto-populate event_competitors on registration approval ─────────
 
@@ -315,6 +334,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_registration_approved ON public.registrations;
 CREATE TRIGGER on_registration_approved
   AFTER UPDATE ON public.registrations
   FOR EACH ROW EXECUTE PROCEDURE public.handle_registration_approval();
