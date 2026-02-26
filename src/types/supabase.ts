@@ -1,4 +1,4 @@
-export type UserRole = 'competitor' | 'host';
+export type UserRole = 'competitor' | 'host' | 'super_admin';
 export type EventStatus = 'draft' | 'registration_open' | 'registration_closed' | 'live' | 'completed';
 export type RegistrationStatus = 'pending_payment' | 'pending_review' | 'approved' | 'rejected';
 

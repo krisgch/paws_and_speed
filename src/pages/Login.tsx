@@ -20,7 +20,7 @@ export default function Login() {
       setError(err.message);
     } else {
       const profile = await getProfile(data.user!.id);
-      navigate(profile?.role === 'host' ? '/host' : '/dashboard');
+      navigate(profile?.role === 'host' || profile?.role === 'super_admin' ? '/host' : '/dashboard');
     }
   };
 

@@ -23,13 +23,15 @@ export function HostRoute() {
   const { user, profile, loading } = useAuthStore();
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/login" replace />;
-  if (profile?.role !== 'host') return <Navigate to="/dashboard" replace />;
+  if (profile?.role !== 'host' && profile?.role !== 'super_admin') return <Navigate to="/dashboard" replace />;
   return <Outlet />;
 }
 
 export function GuestRoute() {
-  const { user, loading } = useAuthStore();
+  const { user, profile, loading } = useAuthStore();
   if (loading) return <Spinner />;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) {
+    return <Navigate to={profile?.role === 'host' || profile?.role === 'super_admin' ? '/host' : '/dashboard'} replace />;
+  }
   return <Outlet />;
 }
