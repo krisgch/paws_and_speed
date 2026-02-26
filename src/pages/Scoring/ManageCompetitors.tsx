@@ -27,14 +27,14 @@ export default function ManageCompetitors() {
   const handleRemove = (id: string) => {
     const c = competitors.find((x) => x.id === id);
     if (!c) return;
-    if (!window.confirm(`Remove ${c.dog} (${c.human}) from ${c.round}?`)) return;
+    if (!window.confirm(`Remove ${c.dog_name} (${c.human_name}) from ${c.round_id}?`)) return;
     removeCompetitor(id);
-    showToast(`${c.dog} removed`);
+    showToast(`${c.dog_name} removed`);
   };
 
   const data = competitors
-    .filter((c) => c.round === currentRound)
-    .sort((a, b) => a.size.localeCompare(b.size) || a.order - b.order);
+    .filter((c) => c.round_id === currentRound)
+    .sort((a, b) => a.size.localeCompare(b.size) || a.run_order - b.run_order);
 
   const inputStyle = {
     padding: '8px 10px',
@@ -116,14 +116,14 @@ export default function ManageCompetitors() {
                   className="flex items-center gap-2.5 text-[13px]"
                   style={{ padding: '8px 12px', borderBottom: '1px solid rgba(42,47,64,0.4)' }}
                 >
-                  <span className="font-mono font-bold text-center w-7" style={{ color: '#555b73' }}>{c.order}</span>
+                  <span className="font-mono font-bold text-center w-7" style={{ color: '#555b73' }}>{c.run_order}</span>
                   <SizeTag size={c.size} />
                   <div className="flex-1">
                     <div className="font-bold" style={{ color: '#f0f2f8' }}>
-                      {dogEmoji(c.dog)} {c.dog}{' '}
+                      {dogEmoji(c.dog_name)} {c.dog_name}{' '}
                       <span className="font-normal text-[11px]" style={{ color: '#555b73' }}>{c.breed}</span>
                     </div>
-                    <div className="text-[11px]" style={{ color: '#8b90a5' }}>{c.human}</div>
+                    <div className="text-[11px]" style={{ color: '#8b90a5' }}>{c.human_name}</div>
                   </div>
                   <button
                     onClick={() => handleRemove(c.id)}

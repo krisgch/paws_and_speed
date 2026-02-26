@@ -1,4 +1,5 @@
-import type { Size, CourseTimeConfig, Competitor } from '../types/index.ts';
+import type { Size, CourseTimeConfig } from '../types/index.ts';
+import type { EventCompetitor, EventRound } from '../types/supabase.ts';
 
 export const ROUNDS = [
   'Novice 1',
@@ -149,61 +150,74 @@ const ROUND_SCORES: Record<string, Record<string, Score>> = {
   // Agility A2, A3 — all registered, no scores (entries present but no score data here)
 };
 
-export function generateMockData(): {
-  competitors: Competitor[];
-  courseTimeConfig: CourseTimeConfig;
-  currentRound: string;
-  roundAbbreviations: Record<string, string>;
-} {
-  const competitors: Competitor[] = [];
-  const courseTimeConfig = { ...DEFAULT_COURSE_TIMES };
-  const roundAbbreviations = { ...DEFAULT_ROUND_ABBREVIATIONS };
+const MOCK_EVENT_ID = 'mock-event';
 
-  for (const round of [...ROUNDS]) {
+export function generateMockData(): {
+  competitors: EventCompetitor[];
+  eventRounds: EventRound[];
+  currentRoundId: string;
+} {
+  const eventRounds: EventRound[] = [...ROUNDS].map((name, i) => ({
+    id: name, // mock mode: round name serves as the round ID
+    event_id: MOCK_EVENT_ID,
+    name,
+    abbreviation: DEFAULT_ROUND_ABBREVIATIONS[name] ?? name.substring(0, 4),
+    sort_order: i,
+    sct: DEFAULT_COURSE_TIMES[name]?.sct ?? 40,
+    mct: DEFAULT_COURSE_TIMES[name]?.mct ?? 56,
+  }));
+
+  const competitors: EventCompetitor[] = [];
+  const now = new Date().toISOString();
+
+  for (const round of eventRounds) {
     const orderBySize: Record<Size, number> = { S: 0, M: 0, I: 0, L: 0 };
     for (const d of MOCK_DOGS) {
       orderBySize[d.size]++;
-      const ct = courseTimeConfig[round] ?? { sct: 0, mct: 0 };
-      const scoreEntry = ROUND_SCORES[round]?.[d.dog];
+      const scoreEntry = ROUND_SCORES[round.name]?.[d.dog];
 
       let fault: number | null = null;
       let refusal: number | null = null;
-      let time: number | null = null;
-      let timeFault: number | null = null;
-      let totalFault: number | null = null;
+      let time_sec: number | null = null;
+      let time_fault: number | null = null;
+      let total_fault: number | null = null;
       let eliminated = false;
 
       if (scoreEntry) {
         const [f, ref, t] = scoreEntry;
         fault = f;
         refusal = ref;
-        time = t;
-        if (t > ct.mct) {
+        time_sec = t;
+        if (t > round.mct) {
           eliminated = true;
         } else {
-          timeFault = calcTF(t, ct.sct);
-          totalFault = f + ref + timeFault;
+          time_fault = calcTF(t, round.sct);
+          total_fault = f + ref + time_fault;
         }
       }
 
       competitors.push({
         id: crypto.randomUUID(),
-        round,
-        size: d.size,
-        order: orderBySize[d.size],
-        dog: d.dog,
-        human: d.human,
+        event_id: MOCK_EVENT_ID,
+        round_id: round.id,
+        registration_id: null,
+        dog_id: `mock-dog-${d.dog.toLowerCase().replace(/\s+/g, '-')}`,
+        dog_name: d.dog,
         breed: d.breed,
-        icon: d.icon,
+        human_name: d.human,
+        icon: d.icon ?? null,
+        size: d.size,
+        run_order: orderBySize[d.size],
         fault,
         refusal,
-        time,
-        timeFault,
-        totalFault,
+        time_sec,
+        time_fault,
+        total_fault,
         eliminated,
+        created_at: now,
       });
     }
   }
 
-  return { competitors, courseTimeConfig, currentRound: 'Agility A1', roundAbbreviations };
+  return { competitors, eventRounds, currentRoundId: 'Agility A1' };
 }

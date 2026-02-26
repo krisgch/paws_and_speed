@@ -20,15 +20,15 @@ export default function RunningOrder() {
 
   // All competitors in this round in competition order (S→M→I→L, then by run order)
   const allData = competitors
-    .filter((c) => c.round === currentRound)
-    .sort((a, b) => SIZES_ORDER[a.size] - SIZES_ORDER[b.size] || a.order - b.order);
+    .filter((c) => c.round_id === currentRound)
+    .sort((a, b) => SIZES_ORDER[a.size] - SIZES_ORDER[b.size] || a.run_order - b.run_order);
 
   // Live round queue — always derived from liveRound so banner persists across round changes
   const isViewingLive = currentRound === liveRound;
   const liveData = competitors
-    .filter((c) => c.round === liveRound)
-    .sort((a, b) => SIZES_ORDER[a.size] - SIZES_ORDER[b.size] || a.order - b.order);
-  const liveQueue = liveData.filter((c) => c.totalFault === null && !c.eliminated);
+    .filter((c) => c.round_id === liveRound)
+    .sort((a, b) => SIZES_ORDER[a.size] - SIZES_ORDER[b.size] || a.run_order - b.run_order);
+  const liveQueue = liveData.filter((c) => c.total_fault === null && !c.eliminated);
   const nowRunning = liveQueue[0];
   const upNext = liveQueue.slice(1, 4);
 
@@ -51,7 +51,7 @@ export default function RunningOrder() {
     const target = allData.find((c) => c.id === targetId);
     if (!dragged || !target || dragged.size !== target.size) { setDraggedId(null); setDragOverId(null); return; }
 
-    const group = allData.filter((c) => c.size === dragged.size).sort((a, b) => a.order - b.order);
+    const group = allData.filter((c) => c.size === dragged.size).sort((a, b) => a.run_order - b.run_order);
     const fromIdx = group.findIndex((c) => c.id === draggedId);
     const toIdx = group.findIndex((c) => c.id === targetId);
     const newOrder = [...group];
@@ -224,7 +224,7 @@ export default function RunningOrder() {
                     {/* Competitor rows */}
                     {group.map((c) => {
                       const isRunning = isViewingLive && nowRunning?.id === c.id;
-                      const isDone = c.totalFault !== null && !c.eliminated;
+                      const isDone = c.total_fault !== null && !c.eliminated;
                       const isEliminated = c.eliminated;
                       const isDragging = draggedId === c.id;
                       const isDragOver = dragOverId === c.id;
@@ -281,16 +281,16 @@ export default function RunningOrder() {
                             </td>
                           )}
                           <td className="text-[13px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)' }}>
-                            <span className="font-mono font-bold text-[14px]" style={{ color: '#ff6b2c' }}>{c.order}</span>
+                            <span className="font-mono font-bold text-[14px]" style={{ color: '#ff6b2c' }}>{c.run_order}</span>
                           </td>
                           <td className="text-[13px] font-bold" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#f0f2f8' }}>
-                            {c.icon || dogEmoji(c.dog)} {c.dog}
+                            {c.icon || dogEmoji(c.dog_name)} {c.dog_name}
                           </td>
                           <td className="text-[12px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
                             {c.breed || '—'}
                           </td>
                           <td className="text-[13px]" style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)', color: '#8b90a5' }}>
-                            {c.human}
+                            {c.human_name}
                           </td>
                           <td style={{ padding: '12px 14px', borderBottom: '1px solid rgba(42,47,64,0.5)' }}>
                             {statusEl}

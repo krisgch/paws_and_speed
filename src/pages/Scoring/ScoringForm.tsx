@@ -18,7 +18,7 @@ export default function ScoringForm() {
     if (competitor) {
       setFault(competitor.fault?.toString() ?? '');
       setRefusal(competitor.refusal?.toString() ?? '');
-      setTime(competitor.time?.toString() ?? '');
+      setTime(competitor.time_sec?.toString() ?? '');
     } else {
       setFault('');
       setRefusal('');
@@ -37,16 +37,16 @@ export default function ScoringForm() {
     if (!competitor) return;
     saveScore(competitor.id, f, r, t);
     if (overMCT) {
-      showToast(`${competitor.dog} eliminated — over MCT (${ct.mct}s)`);
+      showToast(`${competitor.dog_name} eliminated — over MCT (${ct.mct}s)`);
     } else {
-      showToast(`Score saved for ${competitor.dog}! Total: ${f + r + tf} faults`);
+      showToast(`Score saved for ${competitor.dog_name}! Total: ${f + r + tf} faults`);
     }
   };
 
   const handleEliminate = () => {
     if (!competitor) return;
     eliminateCompetitor(competitor.id);
-    showToast(`${competitor.dog} eliminated`);
+    showToast(`${competitor.dog_name} eliminated`);
   };
 
   const handleClear = () => {
@@ -74,15 +74,15 @@ export default function ScoringForm() {
       {/* Header */}
       <div style={{ padding: '20px', borderBottom: '1px solid #2a2f40' }}>
         <div className="font-display text-[24px] mb-1" style={{ color: '#f0f2f8' }}>
-          {competitor ? `${competitor.icon || dogEmoji(competitor.dog)} ${competitor.dog}` : 'Select a competitor'}
+          {competitor ? `${competitor.icon || dogEmoji(competitor.dog_name)} ${competitor.dog_name}` : 'Select a competitor'}
         </div>
         <div className="text-[13px] flex gap-3.5 items-center" style={{ color: '#8b90a5' }}>
-          <span>{competitor?.human ?? '—'}</span>
+          <span>{competitor?.human_name ?? '—'}</span>
           {competitor && (
             <>
               <SizeTag size={competitor.size} />
               <span style={{ color: '#555b73' }}>{competitor.breed}</span>
-              <span style={{ color: '#f0f2f8' }}>#{competitor.order}</span>
+              <span style={{ color: '#f0f2f8' }}>#{competitor.run_order}</span>
             </>
           )}
         </div>

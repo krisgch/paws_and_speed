@@ -51,12 +51,12 @@ export default function Podium({ ranked }: PodiumProps) {
                 background: cfg.avatarBg,
               }}
             >
-              {dogEmoji(c.dog)}
+              {dogEmoji(c.dog_name)}
             </div>
-            <div className="font-bold text-[13px] text-center" style={{ color: '#f0f2f8' }}>{c.dog}</div>
-            <div className="text-[11px] text-center" style={{ color: '#8b90a5' }}>{c.human}</div>
+            <div className="font-bold text-[13px] text-center" style={{ color: '#f0f2f8' }}>{c.dog_name}</div>
+            <div className="text-[11px] text-center" style={{ color: '#8b90a5' }}>{c.human_name}</div>
             <div className="font-mono text-[10px]" style={{ color: '#555b73' }}>
-              {c.totalFault}F · {c.time?.toFixed(2)}s
+              {c.total_fault}F · {c.time_sec?.toFixed(2)}s
             </div>
             <div
               className="w-[110px] flex items-center justify-center font-display text-[22px]"

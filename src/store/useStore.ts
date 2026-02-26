@@ -1,8 +1,30 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Competitor, CourseTimeConfig, Page, Size } from '../types/index.ts';
+import type { EventCompetitor, EventRound } from '../types/supabase.ts';
+import type { CourseTimeConfig, Page, Size } from '../types/index.ts';
 import { ROUNDS, generateMockData, DEFAULT_COURSE_TIMES, DEFAULT_ROUND_ABBREVIATIONS } from '../constants/index.ts';
 import { calcTimeFault, isOverMCT } from '../utils/scoring.ts';
+import {
+  saveCompetitorScore as dbSaveScore,
+  eliminateCompetitor as dbEliminate,
+  reorderCompetitors as dbReorder,
+} from '../lib/db.ts';
+
+// Migrate from v1 (Competitor) to v2 (EventCompetitor) format
+(function migrateStorage() {
+  const raw = localStorage.getItem('paws-speed-data');
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    const first = parsed?.state?.competitors?.[0];
+    // v1 had 'dog' field; v2 has 'dog_name'
+    if (first && 'dog' in first && !('dog_name' in first)) {
+      localStorage.removeItem('paws-speed-data');
+    }
+  } catch {
+    localStorage.removeItem('paws-speed-data');
+  }
+})();
 
 interface ToastState {
   message: string;
@@ -19,6 +41,7 @@ interface AppStore {
   // Rounds (dynamic)
   rounds: string[];
   roundAbbreviations: Record<string, string>;
+  eventRounds: EventRound[];
 
   // Filters
   runningSizeFilter: Size[];
@@ -26,7 +49,7 @@ interface AppStore {
   rankingSizeFilter: Size;
 
   // Data (persisted)
-  competitors: Competitor[];
+  competitors: EventCompetitor[];
   courseTimeConfig: CourseTimeConfig;
 
   // Scoring selection
@@ -69,7 +92,7 @@ interface AppStore {
   updateCourseTime: (round: string, sct: number, mct: number) => void;
 
   // Import
-  importData: (data: { competitors: Competitor[]; courseTimeConfig: CourseTimeConfig }) => void;
+  importData: (data: { competitors: EventCompetitor[]; courseTimeConfig: CourseTimeConfig }) => void;
 
   // Sync actions
   setSessionId: (id: string | null) => void;
@@ -92,6 +115,7 @@ const useStore = create<AppStore>()(
       // Rounds
       rounds: [...ROUNDS],
       roundAbbreviations: { ...DEFAULT_ROUND_ABBREVIATIONS },
+      eventRounds: [],
 
       // Filters
       runningSizeFilter: ['S', 'M', 'I', 'L'],
@@ -136,24 +160,28 @@ const useStore = create<AppStore>()(
       addCompetitor: (data) => set((state) => {
         const round = state.currentRound;
         const existing = state.competitors.filter(
-          (c) => c.round === round && c.size === data.size
+          (c) => c.round_id === round && c.size === data.size
         );
-        const maxOrder = existing.reduce((m, c) => Math.max(m, c.order), 0);
-        const newComp: Competitor = {
+        const maxOrder = existing.reduce((m, c) => Math.max(m, c.run_order), 0);
+        const newComp: EventCompetitor = {
           id: crypto.randomUUID(),
-          round,
-          size: data.size,
-          order: maxOrder + 1,
-          dog: data.dog,
-          human: data.human,
+          event_id: 'mock-event',
+          round_id: round,
+          registration_id: null,
+          dog_id: `mock-dog-${data.dog.toLowerCase().replace(/\s+/g, '-')}`,
+          dog_name: data.dog,
           breed: data.breed || '—',
-          icon: data.icon,
+          human_name: data.human,
+          icon: data.icon ?? null,
+          size: data.size,
+          run_order: maxOrder + 1,
           fault: null,
           refusal: null,
-          timeFault: null,
-          totalFault: null,
-          time: null,
+          time_sec: null,
+          time_fault: null,
+          total_fault: null,
           eliminated: false,
+          created_at: new Date().toISOString(),
         };
         return { competitors: [...state.competitors, newComp] };
       }),
@@ -162,23 +190,32 @@ const useStore = create<AppStore>()(
         const trimmed = name.trim();
         if (!trimmed || state.rounds.includes(trimmed)) return state;
         const resolvedAbbr = (abbr ?? trimmed).substring(0, 4) || trimmed.substring(0, 4);
+        const newRound: EventRound = {
+          id: trimmed,
+          event_id: 'mock-event',
+          name: trimmed,
+          abbreviation: resolvedAbbr,
+          sort_order: state.eventRounds.length,
+          sct: 40,
+          mct: 56,
+        };
         return {
           rounds: [...state.rounds, trimmed],
           roundAbbreviations: { ...state.roundAbbreviations, [trimmed]: resolvedAbbr },
           courseTimeConfig: { ...state.courseTimeConfig, [trimmed]: { sct: 40, mct: 56 } },
+          eventRounds: [...state.eventRounds, newRound],
         };
       }),
 
       renameRound: (oldName, newName, newAbbr?) => set((state) => {
         const trimmed = newName.trim();
-        // Allow same name if only changing abbr; block if new name conflicts with another round
         if (!trimmed) return state;
         if (trimmed !== oldName && state.rounds.includes(trimmed)) return state;
         if (trimmed === oldName && newAbbr === undefined) return state;
 
         const rounds = state.rounds.map((r) => (r === oldName ? trimmed : r));
         const competitors = state.competitors.map((c) =>
-          c.round === oldName ? { ...c, round: trimmed } : c
+          c.round_id === oldName ? { ...c, round_id: trimmed } : c
         );
         const courseTimeConfig = { ...state.courseTimeConfig };
         if (courseTimeConfig[oldName] && trimmed !== oldName) {
@@ -197,53 +234,80 @@ const useStore = create<AppStore>()(
           roundAbbreviations[oldName] = newAbbr;
         }
 
-        return { rounds, competitors, courseTimeConfig, currentRound, liveRound, roundAbbreviations };
+        const resolvedAbbr = roundAbbreviations[trimmed] ?? trimmed.substring(0, 4);
+        const eventRounds = state.eventRounds.map((r) =>
+          r.id === oldName
+            ? { ...r, id: trimmed, name: trimmed, abbreviation: resolvedAbbr }
+            : r
+        );
+
+        return { rounds, competitors, courseTimeConfig, currentRound, liveRound, roundAbbreviations, eventRounds };
       }),
 
       deleteRound: (name) => set((state) => {
-        if (state.competitors.some((c) => c.round === name)) return state;
+        if (state.competitors.some((c) => c.round_id === name)) return state;
         const rounds = state.rounds.filter((r) => r !== name);
         const courseTimeConfig = { ...state.courseTimeConfig };
         delete courseTimeConfig[name];
         const roundAbbreviations = { ...state.roundAbbreviations };
         delete roundAbbreviations[name];
+        const eventRounds = state.eventRounds.filter((r) => r.id !== name);
         const currentRound = state.currentRound === name ? (rounds[0] ?? '') : state.currentRound;
         const liveRound = state.liveRound === name ? (rounds[0] ?? '') : state.liveRound;
-        return { rounds, courseTimeConfig, currentRound, liveRound, roundAbbreviations };
+        return { rounds, courseTimeConfig, currentRound, liveRound, roundAbbreviations, eventRounds };
       }),
 
-      setRoundAbbr: (name, abbr) => set((state) => ({
-        roundAbbreviations: { ...state.roundAbbreviations, [name]: abbr.substring(0, 4) },
-      })),
+      setRoundAbbr: (name, abbr) => set((state) => {
+        const resolvedAbbr = abbr.substring(0, 4);
+        return {
+          roundAbbreviations: { ...state.roundAbbreviations, [name]: resolvedAbbr },
+          eventRounds: state.eventRounds.map((r) =>
+            r.id === name ? { ...r, abbreviation: resolvedAbbr } : r
+          ),
+        };
+      }),
 
-      reorderCompetitorsInGroup: (round, size, orderedIds) => set((state) => ({
-        competitors: state.competitors.map((c) => {
-          if (c.round !== round || c.size !== size) return c;
-          const newOrder = orderedIds.indexOf(c.id) + 1;
-          return newOrder > 0 ? { ...c, order: newOrder } : c;
-        }),
-      })),
+      reorderCompetitorsInGroup: (round, size, orderedIds) => {
+        set((state) => ({
+          competitors: state.competitors.map((c) => {
+            if (c.round_id !== round || c.size !== size) return c;
+            const newOrder = orderedIds.indexOf(c.id) + 1;
+            return newOrder > 0 ? { ...c, run_order: newOrder } : c;
+          }),
+        }));
+        const group = get().competitors.filter((c) => c.round_id === round && c.size === size);
+        if (group.length > 0 && group[0].event_id !== 'mock-event') {
+          const updates = group
+            .filter((c) => orderedIds.includes(c.id))
+            .map((c) => ({ id: c.id, run_order: c.run_order }));
+          dbReorder(updates).catch(console.error);
+        }
+      },
 
       addCompetitorToRound: (data) => set((state) => {
         const existing = state.competitors.filter(
-          (c) => c.round === data.round && c.size === data.size
+          (c) => c.round_id === data.round && c.size === data.size
         );
-        const maxOrder = existing.reduce((m, c) => Math.max(m, c.order), 0);
-        const newComp: Competitor = {
+        const maxOrder = existing.reduce((m, c) => Math.max(m, c.run_order), 0);
+        const newComp: EventCompetitor = {
           id: crypto.randomUUID(),
-          round: data.round,
-          size: data.size,
-          order: maxOrder + 1,
-          dog: data.dog,
-          human: data.human,
+          event_id: 'mock-event',
+          round_id: data.round,
+          registration_id: null,
+          dog_id: `mock-dog-${data.dog.toLowerCase().replace(/\s+/g, '-')}`,
+          dog_name: data.dog,
           breed: data.breed || '—',
-          icon: data.icon,
+          human_name: data.human,
+          icon: data.icon ?? null,
+          size: data.size,
+          run_order: maxOrder + 1,
           fault: null,
           refusal: null,
-          timeFault: null,
-          totalFault: null,
-          time: null,
+          time_sec: null,
+          time_fault: null,
+          total_fault: null,
           eliminated: false,
+          created_at: new Date().toISOString(),
         };
         return { competitors: [...state.competitors, newComp] };
       }),
@@ -254,57 +318,79 @@ const useStore = create<AppStore>()(
         const remaining = state.competitors.filter((c) => c.id !== id);
         // Reorder within round+size
         const group = remaining
-          .filter((c) => c.round === target.round && c.size === target.size)
-          .sort((a, b) => a.order - b.order);
-        group.forEach((c, i) => { c.order = i + 1; });
+          .filter((c) => c.round_id === target.round_id && c.size === target.size)
+          .sort((a, b) => a.run_order - b.run_order);
+        group.forEach((c, i) => { c.run_order = i + 1; });
         return { competitors: remaining };
       }),
 
       clearAllCompetitors: () => set({ competitors: [] }),
 
-      saveScore: (id, fault, refusal, time) => set((state) => {
-        const competitors = state.competitors.map((c) => {
-          if (c.id !== id) return c;
-          const ct = state.courseTimeConfig[c.round] ?? { sct: 0, mct: 0 };
-          if (isOverMCT(time, ct.mct)) {
-            return { ...c, fault, refusal, time, timeFault: null, totalFault: null, eliminated: true };
-          }
-          const tf = calcTimeFault(time, ct.sct);
-          return { ...c, fault, refusal, time, timeFault: tf, totalFault: fault + refusal + tf, eliminated: false };
+      saveScore: (id, fault, refusal, time) => {
+        set((state) => {
+          const competitors = state.competitors.map((c) => {
+            if (c.id !== id) return c;
+            const ct = state.courseTimeConfig[c.round_id] ?? { sct: 0, mct: 0 };
+            if (isOverMCT(time, ct.mct)) {
+              return { ...c, fault, refusal, time_sec: time, time_fault: null, total_fault: null, eliminated: true };
+            }
+            const tf = calcTimeFault(time, ct.sct);
+            return { ...c, fault, refusal, time_sec: time, time_fault: tf, total_fault: fault + refusal + tf, eliminated: false };
+          });
+          return { competitors };
         });
-        return { competitors };
-      }),
+        const updated = get().competitors.find((c) => c.id === id);
+        if (updated && updated.event_id !== 'mock-event') {
+          dbSaveScore(id, {
+            fault: updated.fault,
+            refusal: updated.refusal,
+            time_sec: updated.time_sec,
+            time_fault: updated.time_fault,
+            total_fault: updated.total_fault,
+            eliminated: updated.eliminated,
+          }).catch(console.error);
+        }
+      },
 
-      eliminateCompetitor: (id) => set((state) => ({
-        competitors: state.competitors.map((c) =>
-          c.id === id
-            ? { ...c, eliminated: true, fault: null, refusal: null, timeFault: null, totalFault: null, time: null }
-            : c
-        ),
-      })),
+      eliminateCompetitor: (id) => {
+        set((state) => ({
+          competitors: state.competitors.map((c) =>
+            c.id === id
+              ? { ...c, eliminated: true, fault: null, refusal: null, time_fault: null, total_fault: null, time_sec: null }
+              : c
+          ),
+        }));
+        const target = get().competitors.find((c) => c.id === id);
+        if (target && target.event_id !== 'mock-event') {
+          dbEliminate(id).catch(console.error);
+        }
+      },
 
       updateCompetitorIcon: (dog, human, icon) => set((state) => ({
         competitors: state.competitors.map((c) =>
-          c.dog === dog && c.human === human ? { ...c, icon } : c
+          c.dog_name === dog && c.human_name === human ? { ...c, icon } : c
         ),
       })),
 
       updateCourseTime: (round, sct, mct) => set((state) => {
         const courseTimeConfig = { ...state.courseTimeConfig, [round]: { sct, mct } };
+        const eventRounds = state.eventRounds.map((r) =>
+          r.id === round ? { ...r, sct, mct } : r
+        );
         const competitors = state.competitors.map((c) => {
-          if (c.round !== round || c.time === null) return c;
-          if (isOverMCT(c.time, mct)) {
-            return { ...c, eliminated: true, timeFault: null, totalFault: null };
+          if (c.round_id !== round || c.time_sec === null) return c;
+          if (isOverMCT(c.time_sec, mct)) {
+            return { ...c, eliminated: true, time_fault: null, total_fault: null };
           }
-          const tf = calcTimeFault(c.time, sct);
+          const tf = calcTimeFault(c.time_sec, sct);
           return {
             ...c,
             eliminated: false,
-            timeFault: tf,
-            totalFault: (c.fault ?? 0) + (c.refusal ?? 0) + tf,
+            time_fault: tf,
+            total_fault: (c.fault ?? 0) + (c.refusal ?? 0) + tf,
           };
         });
-        return { courseTimeConfig, competitors };
+        return { courseTimeConfig, eventRounds, competitors };
       }),
 
       importData: (data) => set({
@@ -326,34 +412,56 @@ const useStore = create<AppStore>()(
         rounds: state.rounds,
         roundAbbreviations: state.roundAbbreviations,
         liveRound: state.liveRound,
+        eventRounds: state.eventRounds,
       }),
     }
   )
 );
 
-// Initialize mock data if store is empty
+// Initialize mock data if store is empty (dev mode only)
 const state = useStore.getState();
-if (state.competitors.length === 0) {
+if (state.competitors.length === 0 && import.meta.env.DEV) {
   const mock = generateMockData();
+  const rounds = mock.eventRounds.map((r) => r.name);
+  const roundAbbreviations = Object.fromEntries(mock.eventRounds.map((r) => [r.name, r.abbreviation]));
+  const courseTimeConfig: CourseTimeConfig = Object.fromEntries(
+    mock.eventRounds.map((r) => [r.name, { sct: r.sct, mct: r.mct }])
+  );
   useStore.setState({
     competitors: mock.competitors,
-    courseTimeConfig: mock.courseTimeConfig,
-    currentRound: mock.currentRound,
-    liveRound: mock.currentRound,
-    roundAbbreviations: mock.roundAbbreviations,
+    eventRounds: mock.eventRounds,
+    rounds,
+    roundAbbreviations,
+    courseTimeConfig,
+    currentRound: mock.currentRoundId,
+    liveRound: mock.currentRoundId,
   });
 } else {
   // currentRound is not persisted — pick the best default from real data.
+  // If eventRounds is empty (old persisted data), rebuild it from rounds + courseTimeConfig
+  const { competitors, rounds, liveRound, eventRounds, courseTimeConfig, roundAbbreviations } = state;
+  if (eventRounds.length === 0 && rounds.length > 0) {
+    const rebuilt: EventRound[] = rounds.map((name, i) => ({
+      id: name,
+      event_id: 'mock-event',
+      name,
+      abbreviation: roundAbbreviations[name] ?? name.substring(0, 4),
+      sort_order: i,
+      sct: courseTimeConfig[name]?.sct ?? 40,
+      mct: courseTimeConfig[name]?.mct ?? 56,
+    }));
+    useStore.setState({ eventRounds: rebuilt });
+  }
+
   // Priority 1: liveRound if it still has unscored competitors (someone is running).
   // Priority 2: first round (in rounds order) that has any competitor.
-  const { competitors, rounds, liveRound } = state;
   const liveHasRunners = competitors.some(
-    (c) => c.round === liveRound && c.totalFault === null && !c.eliminated
+    (c) => c.round_id === liveRound && c.total_fault === null && !c.eliminated
   );
   if (liveHasRunners) {
     useStore.setState({ currentRound: liveRound });
   } else {
-    const firstPopulated = rounds.find((r) => competitors.some((c) => c.round === r));
+    const firstPopulated = rounds.find((r) => competitors.some((c) => c.round_id === r));
     if (firstPopulated) useStore.setState({ currentRound: firstPopulated });
   }
 }

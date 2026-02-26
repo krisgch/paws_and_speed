@@ -5,8 +5,8 @@ export default function ScoringQueue() {
   const { competitors, currentRound, scoringSizeFilter, selectedCompetitorId, setSelectedCompetitorId } = useStore();
 
   const data = competitors
-    .filter((c) => c.round === currentRound && c.size === scoringSizeFilter)
-    .sort((a, b) => a.order - b.order);
+    .filter((c) => c.round_id === currentRound && c.size === scoringSizeFilter)
+    .sort((a, b) => a.run_order - b.run_order);
 
   return (
     <div
@@ -18,7 +18,7 @@ export default function ScoringQueue() {
       </div>
       {data.map((c) => {
         const isActive = selectedCompetitorId === c.id;
-        const scored = c.totalFault !== null || c.eliminated;
+        const scored = c.total_fault !== null || c.eliminated;
         return (
           <div
             key={c.id}
@@ -34,22 +34,22 @@ export default function ScoringQueue() {
             onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#1a1e28'; }}
             onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
           >
-            <span className="font-mono text-[12px] font-bold w-[22px]" style={{ color: '#555b73' }}>{c.order}</span>
+            <span className="font-mono text-[12px] font-bold w-[22px]" style={{ color: '#555b73' }}>{c.run_order}</span>
             <div>
               <div className="font-bold text-[13px]" style={{ color: '#f0f2f8' }}>
-                {c.icon || dogEmoji(c.dog)} {c.dog}
+                {c.icon || dogEmoji(c.dog_name)} {c.dog_name}
                 {c.eliminated ? (
                   <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
                     ELIM
                   </span>
-                ) : c.totalFault !== null && (
+                ) : c.total_fault !== null && (
                   <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(45,212,160,0.15)', color: '#2dd4a0' }}>
                     ✓
                   </span>
                 )}
               </div>
               <div className="text-[11px]" style={{ color: '#8b90a5' }}>
-                {c.human} · <span style={{ color: '#555b73' }}>{c.breed}</span>
+                {c.human_name} · <span style={{ color: '#555b73' }}>{c.breed}</span>
               </div>
             </div>
           </div>

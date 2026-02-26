@@ -1,10 +1,10 @@
-import type { Competitor } from '../types/index.ts';
+import type { EventCompetitor } from '../types/supabase.ts';
 import { dogEmoji, SIZE_LABELS } from '../constants/index.ts';
 import SizeTag from './SizeTag.tsx';
 
 interface NowRunningProps {
-  competitor: Competitor | undefined;
-  upNext: Competitor[];
+  competitor: EventCompetitor | undefined;
+  upNext: EventCompetitor[];
   liveRound?: string;
   isViewingLive?: boolean;
 }
@@ -39,16 +39,16 @@ export default function NowRunning({ competitor, upNext, liveRound, isViewingLiv
         </div>
         <div className="flex-1">
           <div className="font-display text-[20px]" style={{ color: '#f0f2f8' }}>
-            {competitor.icon || dogEmoji(competitor.dog)} {competitor.dog}
+            {competitor.icon || dogEmoji(competitor.dog_name)} {competitor.dog_name}
           </div>
-          <div className="text-[14px]" style={{ color: '#8b90a5' }}>{competitor.human}</div>
+          <div className="text-[14px]" style={{ color: '#8b90a5' }}>{competitor.human_name}</div>
         </div>
         <div className="flex gap-2.5 max-sm:ml-0">
           <div className="flex items-center gap-[5px] text-[12px] font-semibold" style={{ padding: '5px 12px', borderRadius: '8px', background: '#1c2030' }}>
             <SizeTag size={competitor.size} /> {SIZE_LABELS[competitor.size]}
           </div>
           <div className="flex items-center gap-[5px] text-[12px] font-semibold" style={{ padding: '5px 12px', borderRadius: '8px', background: '#1c2030', color: '#f0f2f8' }}>
-            #{competitor.order}
+            #{competitor.run_order}
           </div>
         </div>
       </div>
@@ -75,9 +75,9 @@ export default function NowRunning({ competitor, upNext, liveRound, isViewingLiv
             <div key={c.id} className="flex items-center gap-[6px]">
               <SizeTag size={c.size} />
               <span className="text-[13px] font-semibold" style={{ color: '#f0f2f8' }}>
-                {c.icon || dogEmoji(c.dog)} {c.dog}
+                {c.icon || dogEmoji(c.dog_name)} {c.dog_name}
               </span>
-              <span className="text-[12px]" style={{ color: '#555b73' }}>{c.human}</span>
+              <span className="text-[12px]" style={{ color: '#555b73' }}>{c.human_name}</span>
             </div>
           ))}
         </div>

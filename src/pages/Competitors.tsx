@@ -108,9 +108,9 @@ export default function Competitors() {
   // Derive unique dogs from live competitor records
   const dogMap = new Map<string, DogRow>();
   for (const c of competitors) {
-    const key = `${c.dog}|${c.human}`;
+    const key = `${c.dog_name}|${c.human_name}`;
     if (!dogMap.has(key)) {
-      dogMap.set(key, { key, dog: c.dog, breed: c.breed, size: c.size, human: c.human, icon: c.icon });
+      dogMap.set(key, { key, dog: c.dog_name, breed: c.breed, size: c.size, human: c.human_name, icon: c.icon ?? undefined });
     } else if (c.icon && !dogMap.get(key)!.icon) {
       dogMap.get(key)!.icon = c.icon;
     }
@@ -143,11 +143,11 @@ export default function Competitors() {
     sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
   const isEntered = (dog: DogRow, round: string) =>
-    competitors.some((c) => c.dog === dog.dog && c.human === dog.human && c.round === round);
+    competitors.some((c) => c.dog_name === dog.dog && c.human_name === dog.human && c.round_id === round);
 
   const isScored = (dog: DogRow, round: string) =>
     competitors.some(
-      (c) => c.dog === dog.dog && c.human === dog.human && c.round === round && (c.time !== null || c.eliminated)
+      (c) => c.dog_name === dog.dog && c.human_name === dog.human && c.round_id === round && (c.time_sec !== null || c.eliminated)
     );
 
   const toggleRound = (dog: DogRow, round: string) => {
@@ -156,7 +156,7 @@ export default function Competitors() {
         showToast(`${dog.dog} already has results in ${round} — remove scores first`);
         return;
       }
-      const c = competitors.find((x) => x.dog === dog.dog && x.human === dog.human && x.round === round);
+      const c = competitors.find((x) => x.dog_name === dog.dog && x.human_name === dog.human && x.round_id === round);
       if (c) removeCompetitor(c.id);
     } else {
       addCompetitorToRound({ dog: dog.dog, human: dog.human, breed: dog.breed, size: dog.size, round, icon: dog.icon });
@@ -185,8 +185,8 @@ export default function Competitors() {
   };
 
   const removeDogFromAll = (dog: DogRow) => {
-    const dogComps = competitors.filter((c) => c.dog === dog.dog && c.human === dog.human);
-    const hasResults = dogComps.some((c) => c.time !== null || c.eliminated);
+    const dogComps = competitors.filter((c) => c.dog_name === dog.dog && c.human_name === dog.human);
+    const hasResults = dogComps.some((c) => c.time_sec !== null || c.eliminated);
     const msg = hasResults
       ? `Remove ${dog.dog} from all rounds? This will also delete their scored results.`
       : `Remove ${dog.dog} from all rounds?`;
@@ -251,7 +251,7 @@ export default function Competitors() {
   };
 
   const handleDeleteRound = (name: string) => {
-    if (competitors.some((c) => c.round === name)) {
+    if (competitors.some((c) => c.round_id === name)) {
       showToast(`Remove all competitors from "${name}" before deleting it`);
       return;
     }

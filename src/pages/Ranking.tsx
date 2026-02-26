@@ -10,29 +10,30 @@ import { exportExcel, exportPDF, exportSharePNG } from '../utils/export.ts';
 import type { Size } from '../types/index.ts';
 
 export default function Ranking() {
-  const { competitors, currentRound, rounds, courseTimeConfig, rankingSizeFilter, setRankingSizeFilter, showToast } = useStore();
+  const { competitors, currentRound, eventRounds, rankingSizeFilter, setRankingSizeFilter, showToast } = useStore();
   const [shareOpen, setShareOpen] = useState(false);
 
-  const data = competitors.filter((c) => c.round === currentRound && c.size === rankingSizeFilter);
+  const data = competitors.filter((c) => c.round_id === currentRound && c.size === rankingSizeFilter);
   const ranked = rankCompetitors(data);
   const scoredCount = ranked.filter((c) => c.rank !== null).length;
 
   const handleExportExcel = () => {
-    exportExcel(competitors, courseTimeConfig, rounds);
+    exportExcel(competitors, eventRounds);
     showToast('Excel exported!');
   };
 
   const handleExportPDF = () => {
-    exportPDF(competitors, courseTimeConfig, rounds);
+    exportPDF(competitors, eventRounds);
     showToast('PDF exported!');
   };
 
   const availableSizes = SIZES.filter((s) =>
-    competitors.some((c) => c.round === currentRound && c.size === s)
+    competitors.some((c) => c.round_id === currentRound && c.size === s)
   );
 
   const handleSharePNG = (size: Size) => {
-    exportSharePNG(currentRound, size, competitors, courseTimeConfig);
+    const round = eventRounds.find((r) => r.id === currentRound);
+    if (round) exportSharePNG(round, size, competitors);
     setShareOpen(false);
     showToast(`PNG exported for ${SIZE_LABELS[size]}!`);
   };
@@ -147,7 +148,7 @@ export default function Ranking() {
             {ranked.map((c) => {
               const isEliminated = c.eliminated;
               const isPending = c.rank === null && !c.eliminated;
-              const isClear = c.totalFault === 0 && !c.eliminated;
+              const isClear = c.total_fault === 0 && !c.eliminated;
 
               let rankEl: React.ReactNode;
               if (c.rank === 1) rankEl = <span className="inline-flex items-center justify-center w-[26px] h-[26px] rounded-full text-[13px] font-bold font-mono" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>🥇</span>;
@@ -163,9 +164,9 @@ export default function Ranking() {
                   <tr key={c.id} style={{ opacity: 0.4, textDecoration: 'line-through' }}>
                     <td style={tdStyle}>{rankEl}</td>
                     <td className="hidden sm:table-cell" style={tdStyle}><SizeTag size={c.size} /></td>
-                    <td style={tdStyle}>{c.icon || dogEmoji(c.dog)} {c.dog}</td>
+                    <td style={tdStyle}>{c.icon || dogEmoji(c.dog_name)} {c.dog_name}</td>
                     <td className="hidden sm:table-cell" style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
-                    <td style={tdStyle}>{c.human}</td>
+                    <td style={tdStyle}>{c.human_name}</td>
                     <td className="hidden md:table-cell" style={tdStyle} />
                     <td className="hidden md:table-cell" style={tdStyle} />
                     <td className="hidden md:table-cell" style={tdStyle} />
@@ -183,9 +184,9 @@ export default function Ranking() {
                   <tr key={c.id} style={{ opacity: 0.4 }}>
                     <td style={tdStyle}>{rankEl}</td>
                     <td className="hidden sm:table-cell" style={tdStyle}><SizeTag size={c.size} /></td>
-                    <td style={tdStyle}>{c.icon || dogEmoji(c.dog)} {c.dog}</td>
+                    <td style={tdStyle}>{c.icon || dogEmoji(c.dog_name)} {c.dog_name}</td>
                     <td className="hidden sm:table-cell" style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
-                    <td style={tdStyle}>{c.human}</td>
+                    <td style={tdStyle}>{c.human_name}</td>
                     <td className="hidden md:table-cell" style={tdStyle} />
                     <td className="hidden md:table-cell" style={tdStyle} />
                     <td className="hidden md:table-cell" style={tdStyle} />
@@ -200,7 +201,7 @@ export default function Ranking() {
                   <td className="hidden sm:table-cell" style={tdStyle}><SizeTag size={c.size} /></td>
                   <td style={{ ...tdStyle, color: '#f0f2f8' }}>
                     <span className="font-bold">
-                      {c.icon || dogEmoji(c.dog)} {c.dog}
+                      {c.icon || dogEmoji(c.dog_name)} {c.dog_name}
                       {isClear && (
                         <span className="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-[6px]" style={{ background: 'rgba(45,212,160,0.15)', color: '#2dd4a0' }}>
                           CLEAR
@@ -209,16 +210,16 @@ export default function Ranking() {
                     </span>
                   </td>
                   <td className="hidden sm:table-cell" style={{ ...tdStyle, color: '#8b90a5', fontSize: '12px' }}>{c.breed || '—'}</td>
-                  <td style={{ ...tdStyle, color: '#8b90a5' }}>{c.human}</td>
+                  <td style={{ ...tdStyle, color: '#8b90a5' }}>{c.human_name}</td>
                   <td className="hidden md:table-cell" style={{ ...tdStyle, color: c.fault === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.fault}</td>
                   <td className="hidden md:table-cell" style={{ ...tdStyle, color: c.refusal === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.refusal}</td>
-                  <td className="hidden md:table-cell" style={{ ...tdStyle, fontFamily: "'JetBrains Mono', monospace", color: (c.timeFault ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.timeFault ?? 0}</td>
-                  <td style={{ ...tdStyle, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: isClear ? '#2dd4a0' : '#ff6b2c' }}>{c.totalFault}</td>
+                  <td className="hidden md:table-cell" style={{ ...tdStyle, fontFamily: "'JetBrains Mono', monospace", color: (c.time_fault ?? 0) === 0 ? '#2dd4a0' : '#f0f2f8' }}>{c.time_fault ?? 0}</td>
+                  <td style={{ ...tdStyle, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: isClear ? '#2dd4a0' : '#ff6b2c' }}>{c.total_fault}</td>
                   <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', monospace" }}>
-                    {c.time?.toFixed(2)}s
-                    {(c.timeFault ?? 0) > 0 && (
+                    {c.time_sec?.toFixed(2)}s
+                    {(c.time_fault ?? 0) > 0 && (
                       <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-[6px]" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
-                        +{c.timeFault}TF
+                        +{c.time_fault}TF
                       </span>
                     )}
                   </td>
