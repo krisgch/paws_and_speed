@@ -4,21 +4,13 @@
 
 -- ─── Enums ────────────────────────────────────────────────────────────────────
 
-DO $$ BEGIN
-  CREATE TYPE public.user_role AS ENUM ('competitor', 'host', 'super_admin');
-EXCEPTION WHEN duplicate_object THEN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'super_admin';
-END $$;
+DROP TYPE IF EXISTS public.user_role CASCADE;
+DROP TYPE IF EXISTS public.event_status CASCADE;
+DROP TYPE IF EXISTS public.registration_status CASCADE;
 
-DO $$ BEGIN
-  CREATE TYPE public.event_status AS ENUM ('draft', 'registration_open', 'registration_closed', 'live', 'completed');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
-  CREATE TYPE public.registration_status AS ENUM ('pending_payment', 'pending_review', 'approved', 'rejected');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE public.user_role AS ENUM ('competitor', 'host', 'super_admin');
+CREATE TYPE public.event_status AS ENUM ('draft', 'registration_open', 'registration_closed', 'live', 'completed');
+CREATE TYPE public.registration_status AS ENUM ('pending_payment', 'pending_review', 'approved', 'rejected');
 
 -- ─── Helper: is_super_admin() ─────────────────────────────────────────────────
 -- Used in RLS policies. SECURITY DEFINER bypasses RLS on profiles table.
