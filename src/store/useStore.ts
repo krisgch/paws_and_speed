@@ -340,7 +340,15 @@ const useStore = create<AppStore>()(
           return { competitors };
         });
         const updated = get().competitors.find((c) => c.id === id);
-        if (updated && updated.event_id !== 'mock-event') {
+        if (
+          updated &&
+          updated.event_id !== 'mock-event' &&
+          updated.fault !== null &&
+          updated.refusal !== null &&
+          updated.time_sec !== null &&
+          updated.time_fault !== null &&
+          updated.total_fault !== null
+        ) {
           dbSaveScore(id, {
             fault: updated.fault,
             refusal: updated.refusal,
