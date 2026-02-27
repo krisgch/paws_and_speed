@@ -99,13 +99,18 @@ $$;
 -- Owned by competitors; reused across events.
 
 CREATE TABLE public.dogs (
-  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id   UUID        NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  name       TEXT        NOT NULL,
-  breed      TEXT        NOT NULL DEFAULT '—',
-  size       TEXT        NOT NULL CHECK (size IN ('S', 'M', 'I', 'L')),
-  icon       TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id          UUID        NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  name              TEXT        NOT NULL,
+  breed             TEXT        NOT NULL DEFAULT '—',
+  size              TEXT        NOT NULL CHECK (size IN ('S', 'M', 'I', 'L')),
+  icon              TEXT,
+  competition_level TEXT        CHECK (competition_level IN ('A0', 'A1', 'A2', 'A3')),
+  registered_name   TEXT,
+  kath_number       TEXT,
+  microchip_number  TEXT,
+  date_of_birth     DATE,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.dogs ENABLE ROW LEVEL SECURITY;

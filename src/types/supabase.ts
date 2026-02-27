@@ -10,6 +10,8 @@ export interface UserProfile {
   created_at: string;
 }
 
+export type CompetitionLevel = 'A0' | 'A1' | 'A2' | 'A3';
+
 export interface Dog {
   id: string;
   owner_id: string;
@@ -17,6 +19,11 @@ export interface Dog {
   breed: string;
   size: 'S' | 'M' | 'I' | 'L';
   icon: string | null;
+  competition_level: CompetitionLevel | null;
+  registered_name: string | null;
+  kath_number: string | null;
+  microchip_number: string | null;
+  date_of_birth: string | null;
   created_at: string;
 }
 
