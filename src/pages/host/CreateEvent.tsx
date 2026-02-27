@@ -37,16 +37,8 @@ export default function CreateEvent() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0c0e12', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <header style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
-        <div className="max-w-[560px] mx-auto flex items-center justify-between">
-          <Link to="/host" className="text-[13px] no-underline" style={{ color: '#8b90a5' }}>← My Events</Link>
-          <span className="text-[14px] font-semibold" style={{ color: '#f0f2f8' }}>New Event</span>
-          <div className="w-20" />
-        </div>
-      </header>
-
-      <main className="max-w-[560px] mx-auto px-5 py-8">
+    <main className="max-w-[560px] mx-auto px-5 py-8">
+      <Link to="/host" className="text-[13px] no-underline mb-6 inline-block" style={{ color: '#8b90a5' }}>← My Events</Link>
         <h1 className="font-display text-[24px] mb-6" style={{ color: '#f0f2f8' }}>Create Event</h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -104,8 +96,7 @@ export default function CreateEvent() {
             </button>
           </div>
         </form>
-      </main>
-    </div>
+    </main>
   );
 }
 

@@ -45,24 +45,16 @@ export default function ManagePricing() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0c0e12' }}>
+      <div className="flex justify-center py-16">
         <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: '#2a2f40', borderTopColor: '#ff6b2c' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0c0e12', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <header style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
-        <div className="max-w-[640px] mx-auto flex items-center justify-between">
-          <Link to={`/host/events/${eventId}`} className="text-[13px] no-underline" style={{ color: '#8b90a5' }}>← Event Hub</Link>
-          <span className="text-[14px] font-semibold" style={{ color: '#f0f2f8' }}>Pricing</span>
-          <div className="w-24" />
-        </div>
-      </header>
-
-      <main className="max-w-[640px] mx-auto px-5 py-8">
-        <h1 className="font-display text-[22px] mb-6" style={{ color: '#f0f2f8' }}>Pricing & Payment</h1>
+    <main className="max-w-[640px] mx-auto px-5 py-8">
+      <Link to={`/host/events/${eventId}`} className="text-[13px] no-underline mb-6 inline-block" style={{ color: '#8b90a5' }}>← Event Hub</Link>
+      <h1 className="font-display text-[22px] mb-6" style={{ color: '#f0f2f8' }}>Pricing & Payment</h1>
 
         {/* Bank account */}
         <div className="mb-8">
@@ -135,8 +127,7 @@ export default function ManagePricing() {
         >
           {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Pricing'}
         </button>
-      </main>
-    </div>
+    </main>
   );
 }
 

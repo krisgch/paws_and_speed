@@ -56,17 +56,9 @@ export default function RegistrationQueue() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0c0e12', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <header style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
-        <div className="max-w-[760px] mx-auto flex items-center justify-between">
-          <Link to={`/host/events/${eventId}`} className="text-[13px] no-underline" style={{ color: '#8b90a5' }}>← Event Hub</Link>
-          <span className="text-[14px] font-semibold" style={{ color: '#f0f2f8' }}>Registrations</span>
-          <div className="w-24" />
-        </div>
-      </header>
-
-      <main className="max-w-[760px] mx-auto px-5 py-8">
-        <h1 className="font-display text-[22px] mb-5" style={{ color: '#f0f2f8' }}>Registration Queue</h1>
+    <main className="max-w-[760px] mx-auto px-5 py-8">
+      <Link to={`/host/events/${eventId}`} className="text-[13px] no-underline mb-5 inline-block" style={{ color: '#8b90a5' }}>← Event Hub</Link>
+      <h1 className="font-display text-[22px] mb-5" style={{ color: '#f0f2f8' }}>Registration Queue</h1>
 
         {/* Filter tabs */}
         <div className="flex gap-2 flex-wrap mb-5">
@@ -117,7 +109,6 @@ export default function RegistrationQueue() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }

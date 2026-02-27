@@ -57,23 +57,19 @@ export default function EventHub() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: '#0c0e12', color: '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <header style={{ padding: '14px 20px', borderBottom: '1px solid #2a2f40' }}>
-        <div className="max-w-[760px] mx-auto flex items-center justify-between">
-          <Link to="/host" className="text-[13px] no-underline" style={{ color: '#8b90a5' }}>← My Events</Link>
-          <Link
-            to={`/events/${eventId}/live`}
-            className="text-[12px] font-bold no-underline"
-            style={{ padding: '5px 14px', borderRadius: '20px', background: 'rgba(255,107,44,0.12)', color: '#ff6b2c' }}
-          >
-            👁 Live View
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-[760px] mx-auto px-5 py-8">
+    <main className="max-w-[760px] mx-auto px-5 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/host" className="text-[13px] no-underline" style={{ color: '#8b90a5' }}>← My Events</Link>
+        <Link
+          to={`/events/${eventId}/live`}
+          className="text-[12px] font-bold no-underline"
+          style={{ padding: '5px 14px', borderRadius: '20px', background: 'rgba(255,107,44,0.12)', color: '#ff6b2c' }}
+        >
+          👁 Live View
+        </Link>
+      </div>
         <div className="mb-6">
-          <h1 className="font-display text-[26px] mb-1" style={{ color: '#f0f2f8' }}>{event.name}</h1>
+        <h1 className="font-display text-[26px] mb-1" style={{ color: '#f0f2f8' }}>{event.name}</h1>
           {event.venue && <p className="text-[13px]" style={{ color: '#8b90a5' }}>📍 {event.venue}</p>}
         </div>
 
@@ -123,7 +119,6 @@ export default function EventHub() {
             </Link>
           ))}
         </div>
-      </main>
-    </div>
+    </main>
   );
 }
