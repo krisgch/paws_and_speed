@@ -178,6 +178,31 @@ export async function reorderCompetitors(updates: { id: string; run_order: numbe
   if (error) throw error;
 }
 
+export async function addEventCompetitor(data: Omit<EventCompetitor, 'id' | 'created_at'>): Promise<EventCompetitor> {
+  const { data: row, error } = await supabase.from('event_competitors').insert(data).select().single();
+  if (error) throw error;
+  return row;
+}
+
+export async function deleteEventCompetitor(id: string): Promise<void> {
+  const { error } = await supabase.from('event_competitors').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteAllEventCompetitors(eventId: string): Promise<void> {
+  const { error } = await supabase.from('event_competitors').delete().eq('event_id', eventId);
+  if (error) throw error;
+}
+
+export async function updateEventCompetitorIcons(eventId: string, dogId: string, icon: string | null): Promise<void> {
+  const { error } = await supabase
+    .from('event_competitors')
+    .update({ icon })
+    .eq('event_id', eventId)
+    .eq('dog_id', dogId);
+  if (error) throw error;
+}
+
 // ─── Event Live State ─────────────────────────────────────────────────────────
 
 export async function getEventLiveState(eventId: string): Promise<EventLiveState | null> {

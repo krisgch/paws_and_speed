@@ -51,6 +51,7 @@ export default function EventHub() {
     { to: `/host/events/${eventId}/rounds`, icon: '🔄', label: 'Rounds', description: 'Add and configure competition rounds' },
     { to: `/host/events/${eventId}/pricing`, icon: '💰', label: 'Pricing', description: 'Set entry fee tiers' },
     { to: `/host/events/${eventId}/registrations`, icon: '📋', label: 'Registrations', description: 'Review and approve registrations' },
+    { to: `/host/events/${eventId}/competitors`, icon: '🐕', label: 'Competitors', description: 'View and manage competitor round entries' },
     { to: `/host/events/${eventId}/running-order`, icon: '🏃', label: 'Running Order', description: 'Manage competitor order' },
     { to: `/host/events/${eventId}/scoring`, icon: '✏️', label: 'Scoring', description: 'Enter scores live' },
     { to: `/host/events/${eventId}/rankings`, icon: '🏆', label: 'Rankings', description: 'View results & export' },

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   getEventRounds,
   getEventCompetitors,
+  updateEventRound,
   saveCompetitorScore,
   eliminateCompetitor as dbEliminateCompetitor,
 } from '../../lib/db.ts';
@@ -24,6 +25,12 @@ export default function ScoringPage() {
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
 
+  // SCT / MCT inline edit
+  const [editSct, setEditSct] = useState('');
+  const [editMct, setEditMct] = useState('');
+  const [savingTimes, setSavingTimes] = useState(false);
+  const [savedTimes, setSavedTimes] = useState(false);
+
   // Form fields
   const [fault, setFault] = useState('');
   const [refusal, setRefusal] = useState('');
@@ -44,6 +51,27 @@ export default function ScoringPage() {
   }, [eventId]);
 
   const selectedRound = rounds.find((r) => r.id === selectedRoundId);
+
+  // Sync SCT/MCT fields when round changes
+  useEffect(() => {
+    if (selectedRound) {
+      setEditSct(selectedRound.sct.toString());
+      setEditMct(selectedRound.mct.toString());
+    }
+  }, [selectedRoundId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveTimes = async () => {
+    if (!selectedRoundId) return;
+    const sct = parseFloat(editSct);
+    const mct = parseFloat(editMct);
+    if (isNaN(sct) || isNaN(mct) || sct <= 0 || mct <= 0) return;
+    setSavingTimes(true);
+    const updated = await updateEventRound(selectedRoundId, { sct, mct });
+    setRounds((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setSavingTimes(false);
+    setSavedTimes(true);
+    setTimeout(() => setSavedTimes(false), 2000);
+  };
   const queueData = competitors
     .filter((c) => c.round_id === selectedRoundId && c.size === selectedSize)
     .sort((a, b) => a.run_order - b.run_order);
@@ -150,11 +178,39 @@ export default function ScoringPage() {
         })}
       </div>
 
-      {/* SCT / MCT */}
+      {/* SCT / MCT inline editor */}
       {selectedRound && (
-        <p className="text-[12px] mb-5" style={{ color: '#555b73' }}>
-          SCT {selectedRound.sct}s · MCT {selectedRound.mct}s
-        </p>
+        <div className="flex items-center gap-3 flex-wrap mb-5 p-3" style={{ background: '#14171e', border: '1px solid #2a2f40', borderRadius: '10px' }}>
+          <span className="text-[11px] font-bold uppercase tracking-[0.5px]" style={{ color: '#555b73' }}>Course Times</span>
+          <div className="flex items-center gap-1.5">
+            <label className="text-[11px] font-bold" style={{ color: '#8b90a5' }}>SCT</label>
+            <input
+              type="number" min="1" step="0.5" value={editSct}
+              onChange={(e) => setEditSct(e.target.value)}
+              className="w-[72px] outline-none text-center"
+              style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #2a2f40', background: '#1c2030', color: '#f0f2f8', fontSize: '13px', fontFamily: "'JetBrains Mono', monospace" }}
+            />
+            <span className="text-[11px]" style={{ color: '#555b73' }}>s</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <label className="text-[11px] font-bold" style={{ color: '#8b90a5' }}>MCT</label>
+            <input
+              type="number" min="1" step="0.5" value={editMct}
+              onChange={(e) => setEditMct(e.target.value)}
+              className="w-[72px] outline-none text-center"
+              style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #2a2f40', background: '#1c2030', color: '#f0f2f8', fontSize: '13px', fontFamily: "'JetBrains Mono', monospace" }}
+            />
+            <span className="text-[11px]" style={{ color: '#555b73' }}>s</span>
+          </div>
+          <button
+            onClick={handleSaveTimes}
+            disabled={savingTimes}
+            className="cursor-pointer text-[11px] font-bold disabled:opacity-50"
+            style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: savedTimes ? '#2dd4a0' : '#ff6b2c', color: savedTimes ? '#0c0e12' : '#fff' }}
+          >
+            {savingTimes ? '…' : savedTimes ? '✓ Saved' : 'Update'}
+          </button>
+        </div>
       )}
 
       {queueData.length === 0 ? (
