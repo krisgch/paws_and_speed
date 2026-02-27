@@ -94,6 +94,12 @@ export default function Header() {
         {/* Right section */}
         <div className="flex items-center gap-3 shrink-0">
           {eventId && <RoundDropdown />}
+          {user && profile && (
+            <div className="flex flex-col items-end leading-tight max-[600px]:hidden">
+              <span style={{ color: '#f0f2f8', fontSize: '13px', fontWeight: 600 }}>{profile.display_name}</span>
+              <span style={{ color: '#ff6b2c', fontSize: '11px', fontWeight: 500, textTransform: 'capitalize' }}>{profile.role.replace('_', ' ')}</span>
+            </div>
+          )}
           {user ? (
             <UserMenu />
           ) : (

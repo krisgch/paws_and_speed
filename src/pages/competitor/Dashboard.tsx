@@ -34,6 +34,7 @@ function DogForm({
   registeredName, setRegisteredName,
   kathNumber, setKathNumber,
   microchip, setMicrochip,
+  dob, setDob,
   saving, onCancel, onSubmit,
 }: {
   title: string;
